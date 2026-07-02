@@ -1,0 +1,152 @@
+# =============================================================================
+# Domain: Party
+# Entity: PartyAddress
+# Description: A postal address of a Party. Structured against backbone-geo — the geo ids are
+# LOGICAL FKs (no DB constraint across modules/schemas; validated at the ACL layer, not here).
+# Adopted from salt-laravel-contacts addresses + the geo hierarchy.
+# =============================================================================
+
+models:
+  - name: PartyAddress
+    collection: party_addresses
+    description: "A postal address of a party (structured against backbone-geo)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique address identifier"
+
+      party_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Party.id)"]
+        description: "Owning party"
+
+      address_type:
+        type: AddressType
+        attributes: ["@default(home)"]
+        description: "Kind of address"
+
+      label:
+        type: string?
+        attributes: ["@max(60)"]
+        description: "Optional label (e.g. 'HQ', 'Gudang Bekasi')"
+
+      line1:
+        type: string
+        attributes: ["@required", "@max(255)"]
+        description: "Street address line 1"
+
+      line2:
+        type: string?
+        attributes: ["@max(255)"]
+        description: "Street address line 2"
+
+      # Structured geo references — logical FKs to backbone-geo (no DB constraint across modules).
+      country_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Country # logical FK to geo.Country.id"
+
+      province_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Province # logical FK to geo.Province.id"
+
+      city_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "City # logical FK to geo.City.id"
+
+      district_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "District # logical FK to geo.District.id"
+
+      subdistrict_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Subdistrict # logical FK to geo.Subdistrict.id"
+
+      postal_code:
+        type: string?
+        attributes: ["@max(10)"]
+        description: "Postal code (kode pos)"
+
+      latitude:
+        type: decimal?
+        attributes: ["@precision(12,8)"]
+        description: "Latitude"
+
+      longitude:
+        type: decimal?
+        attributes: ["@precision(12,8)"]
+        description: "Longitude"
+
+      is_primary:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Primary address for the party"
+
+      is_billing:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Usable as a billing address"
+
+      is_shipping:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Usable as a shipping address"
+
+      status:
+        type: PartyStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle status"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      party:
+        type: Party
+        attributes: ["@one", "@foreign_key(party_id)"]
+        description: "Owning party"
+        inverse: addresses
+
+    indexes:
+      - type: index
+        fields: [party_id, is_primary]
+      # At most ONE primary per party (council 2026-07-02) — soft-delete aware.
+      - type: unique
+        fields: [party_id]
+        where: "is_primary AND deleted_at IS NULL"
+      - type: index
+        fields: [party_id, address_type]
+      - type: index
+        fields: [subdistrict_id]
+      - type: index
+        fields: [postal_code]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: AddressType
+    description: "Kind of postal address"
+    variants:
+      - name: billing
+        description: "Billing address"
+      - name: shipping
+        description: "Shipping / delivery address"
+      - name: office
+        description: "Office / place of business"
+      - name: home
+        description: "Home address"
+        default: true
+      - name: warehouse
+        description: "Warehouse / gudang"
+      - name: other
+        description: "Other"

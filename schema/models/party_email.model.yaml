@@ -1,0 +1,58 @@
+# =============================================================================
+# Domain: Party
+# Entity: PartyEmail
+# Description: One of a party's email addresses (multi-value). Adopted from salt-laravel-contacts.
+# =============================================================================
+
+models:
+  - name: PartyEmail
+    collection: party_emails
+    description: "An email address of a party"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique email identifier"
+
+      party_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Party.id)"]
+        description: "Owning party"
+
+      label:
+        type: string
+        attributes: ["@default('main')", "@max(30)"]
+        description: "Label (main / work / home / billing / other)"
+
+      email:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Email address"
+
+      is_primary:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Primary email for the party"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      party:
+        type: Party
+        attributes: ["@one", "@foreign_key(party_id)"]
+        description: "Owning party"
+        inverse: emails
+
+    indexes:
+      - type: index
+        fields: [party_id, is_primary]
+      # At most ONE primary per party (council 2026-07-02) — soft-delete aware.
+      - type: unique
+        fields: [party_id]
+        where: "is_primary AND deleted_at IS NULL"
+      - type: index
+        fields: [email]

@@ -1,0 +1,94 @@
+# =============================================================================
+# Party Hooks - lifecycle + write-path rules
+# =============================================================================
+# Declarative spec of the behavior in src/application/service/party_write_service.rs and enforced
+# by src/presentation/http/guarded_routes.rs, proven by tests/party_golden_cases.rs.
+
+module: party
+version: 2
+
+# -----------------------------------------------------------------------------
+# State machine - Party lifecycle.
+# -----------------------------------------------------------------------------
+state_machines:
+  - entity: Party
+    field: status
+    initial: active
+    states: [active, inactive, blocked]
+    transitions:
+      - { from: active,   to: inactive, on: deactivate }
+      - { from: inactive, to: active,   on: reactivate }
+      - { from: active,   to: blocked,  on: block }
+      - { from: blocked,  to: active,   on: unblock }
+
+# -----------------------------------------------------------------------------
+# Write-path rules (validated before any write).
+# -----------------------------------------------------------------------------
+rules:
+  - id: R1
+    name: npwp_format
+    when: creating_party
+    assert: "npwp present => digits(npwp) in {15, 16}"
+    error_code: invalid_npwp
+  - id: R2
+    name: nik_format
+    when: creating_party
+    assert: "nik present => digits(nik) == 16"
+    error_code: invalid_nik
+  - id: R3
+    name: unique_party_code
+    when: creating_party
+    assert: "party_code unique among non-deleted parties"
+    error_code: duplicate_party_code
+  - id: R4
+    name: unique_npwp
+    when: creating_party
+    assert: "npwp unique among non-deleted parties (when present)"
+    error_code: duplicate_npwp
+  - id: R5
+    name: unique_nik
+    when: creating_party
+    assert: "nik unique among non-deleted parties (when present)"
+    error_code: duplicate_nik
+  - id: R6
+    name: child_party_exists
+    when: adding_child
+    assert: "party_id references an existing non-deleted Party"
+    error_code: party_not_found
+  - id: R7
+    name: email_shape
+    when: adding_email
+    assert: "email contains '@'"
+    error_code: invalid_email
+  - id: R8
+    name: geo_refs_are_logical
+    when: adding_address
+    assert: "country/province/city/district/subdistrict ids are LOGICAL FKs to backbone-geo"
+    error_code: none
+    note: "not validated against geo's schema here — validated at the ACL layer / consuming service"
+  # Council 2026-07-02
+  - id: R9
+    name: one_primary_per_party
+    when: adding_child
+    assert: "at most one is_primary child per (party, kind) — partial-unique index"
+    error_code: duplicate_primary
+    note: "set_primary(party, kind, child) switches which one is primary (clear-then-set in one tx)"
+  - id: R10
+    name: kind_field_consistency
+    when: creating_party
+    assert: "person requires first_name or last_name; organization requires legal_name and no NIK"
+    error_code: inconsistent_party_kind
+
+# -----------------------------------------------------------------------------
+# Domain events (owner publishes; consumers project — docs/erp/shared-masters-ownership.md).
+# -----------------------------------------------------------------------------
+events:
+  PartyCreated:
+    when: "a party is created"
+    payload: [party_id, party_code, party_kind]
+  PartyUpdated:
+    when: "a party's core identity changes"
+    payload: [party_id]
+  PartyArchived:
+    when: "a party is blocked/soft-deleted"
+    payload: [party_id]

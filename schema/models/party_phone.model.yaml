@@ -1,0 +1,56 @@
+# =============================================================================
+# Domain: Party
+# Entity: PartyPhone
+# Description: One of a party's phone numbers (multi-value). Adopted from salt-laravel-contacts.
+# =============================================================================
+
+models:
+  - name: PartyPhone
+    collection: party_phones
+    description: "A phone number of a party"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique phone identifier"
+
+      party_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Party.id)"]
+        description: "Owning party"
+
+      label:
+        type: string
+        attributes: ["@default('mobile')", "@max(30)"]
+        description: "Label (mobile / work / home / fax / other)"
+
+      phone:
+        type: string
+        attributes: ["@required", "@max(30)"]
+        description: "Phone number"
+
+      is_primary:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Primary phone for the party"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      party:
+        type: Party
+        attributes: ["@one", "@foreign_key(party_id)"]
+        description: "Owning party"
+        inverse: phones
+
+    indexes:
+      - type: index
+        fields: [party_id, is_primary]
+      # At most ONE primary per party (council 2026-07-02) — soft-delete aware.
+      - type: unique
+        fields: [party_id]
+        where: "is_primary AND deleted_at IS NULL"

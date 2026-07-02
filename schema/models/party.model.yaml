@@ -1,0 +1,142 @@
+# =============================================================================
+# Domain: Party
+# Entity: Party
+# Description: The canonical party identity — a person or an organization. Referenced as party_id
+# across the ERP (accounting AR/AP, selling, buying, crm). "Customer"/"Supplier"/"Employee" are
+# NOT flags here — they are PROJECTIONS owned by the consuming context (selling.Customer,
+# buying.Supplier, payroll). See docs/erp/shared-masters-ownership.md.
+# =============================================================================
+
+models:
+  - name: Party
+    collection: parties
+    description: "Canonical party identity (person or organization)"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique party identifier"
+
+      party_code:
+        type: string
+        attributes: ["@required", "@max(30)"]
+        description: "Short unique code"
+
+      party_kind:
+        type: PartyKind
+        attributes: ["@default(organization)"]
+        description: "Person or organization"
+
+      # Display / legal name
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Display name (full name for a person, common name for an org)"
+
+      legal_name:
+        type: string?
+        attributes: ["@max(200)"]
+        description: "Registered legal name (organization)"
+
+      # Person name parts (optional; used when party_kind = person)
+      first_name:
+        type: string?
+        attributes: ["@max(100)"]
+        description: "First name (person)"
+
+      last_name:
+        type: string?
+        attributes: ["@max(100)"]
+        description: "Last name (person)"
+
+      # Indonesia-first statutory identity
+      npwp:
+        type: string?
+        attributes: ["@max(25)"]
+        description: "Nomor Pokok Wajib Pajak (tax ID) — organizations and taxable individuals"
+
+      nik:
+        type: string?
+        attributes: ["@max(20)"]
+        description: "Nomor Induk Kependudukan (national ID) — persons"
+
+      status:
+        type: PartyStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle status"
+
+      notes:
+        type: string?
+        attributes: ["@max(1000)"]
+        description: "Internal notes"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      addresses:
+        type: PartyAddress[]
+        attributes: ["@one_to_many"]
+        description: "Addresses of this party"
+        inverse: party
+
+      contacts:
+        type: PartyContact[]
+        attributes: ["@one_to_many"]
+        description: "Contact persons of this party"
+        inverse: party
+
+      emails:
+        type: PartyEmail[]
+        attributes: ["@one_to_many"]
+        description: "Email addresses of this party"
+        inverse: party
+
+      phones:
+        type: PartyPhone[]
+        attributes: ["@one_to_many"]
+        description: "Phone numbers of this party"
+        inverse: party
+
+    indexes:
+      - type: unique
+        fields: [party_code]
+        where: "deleted_at IS NULL"
+      - type: unique
+        fields: [npwp]
+        where: "npwp IS NOT NULL AND deleted_at IS NULL"
+      - type: unique
+        fields: [nik]
+        where: "nik IS NOT NULL AND deleted_at IS NULL"
+      - type: index
+        fields: [party_kind, status]
+      - type: index
+        fields: [name]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: PartyKind
+    description: "Kind of party"
+    variants:
+      - name: organization
+        description: "A company / organization / legal entity"
+        default: true
+      - name: person
+        description: "An individual person"
+
+  - name: PartyStatus
+    description: "Party lifecycle status"
+    variants:
+      - name: active
+        description: "Active"
+        default: true
+      - name: inactive
+        description: "Inactive"
+      - name: blocked
+        description: "Blocked (do not transact)"

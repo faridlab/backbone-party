@@ -1,0 +1,72 @@
+# =============================================================================
+# Domain: Party
+# Entity: PartyContact
+# Description: A named contact person at a Party (typically an organization). Adopted from
+# salt-laravel-contacts (person + job_title/department + channel).
+# =============================================================================
+
+models:
+  - name: PartyContact
+    collection: party_contacts
+    description: "A named contact person at a party"
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique contact identifier"
+
+      party_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Party.id)"]
+        description: "Owning party"
+
+      name:
+        type: string
+        attributes: ["@required", "@max(150)"]
+        description: "Contact person full name"
+
+      job_title:
+        type: string?
+        attributes: ["@max(120)"]
+        description: "Job title / jabatan"
+
+      department:
+        type: string?
+        attributes: ["@max(120)"]
+        description: "Department"
+
+      email:
+        type: string?
+        attributes: ["@max(150)"]
+        description: "Contact email"
+
+      phone:
+        type: string?
+        attributes: ["@max(30)"]
+        description: "Contact phone"
+
+      is_primary:
+        type: bool
+        attributes: ["@default(false)"]
+        description: "Primary contact for the party"
+
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata (created_at, updated_at, deleted_at, created_by, updated_by, deleted_by)"
+
+    relations:
+      party:
+        type: Party
+        attributes: ["@one", "@foreign_key(party_id)"]
+        description: "Owning party"
+        inverse: contacts
+
+    indexes:
+      - type: index
+        fields: [party_id, is_primary]
+      # At most ONE primary per party (council 2026-07-02) — soft-delete aware.
+      - type: unique
+        fields: [party_id]
+        where: "is_primary AND deleted_at IS NULL"
