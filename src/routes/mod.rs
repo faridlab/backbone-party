@@ -12,10 +12,15 @@ use std::sync::Arc;
 // Import handlers
 use crate::presentation::http::{
     create_party_routes,
+    create_party_read_routes,
     create_party_address_routes,
+    create_party_address_read_routes,
     create_party_contact_routes,
+    create_party_contact_read_routes,
     create_party_email_routes,
-    create_party_phone_routes
+    create_party_email_read_routes,
+    create_party_phone_routes,
+    create_party_phone_read_routes
 };
 
 // Import AppState for stateful routes
@@ -44,6 +49,20 @@ pub fn create_stateless_routes(module: &crate::PartyModule) -> Router<()> {
         .merge(create_party_contact_routes(module.party_contact_service.clone()))
         .merge(create_party_email_routes(module.party_email_service.clone()))
         .merge(create_party_phone_routes(module.party_phone_service.clone()))
+}
+
+/// Read-only routes for the Party module — every entity mounted READ-ONLY (the guarded base).
+///
+/// The generic `create_stateless_routes` exposes full mutable CRUD with no domain
+/// validation; this exposes only reads, so generic mutation can't bypass a write
+/// service's invariants. Extend it: `create_readonly_party_routes(m).merge(my_validated_writes)`.
+pub fn create_readonly_party_routes(module: &crate::PartyModule) -> Router<()> {
+    Router::new()
+        .merge(create_party_read_routes(module.party_service.clone()))
+        .merge(create_party_address_read_routes(module.party_address_service.clone()))
+        .merge(create_party_contact_read_routes(module.party_contact_service.clone()))
+        .merge(create_party_email_read_routes(module.party_email_service.clone()))
+        .merge(create_party_phone_read_routes(module.party_phone_service.clone()))
 }
 
 /// Get all routes (stateless) for the Party module.
