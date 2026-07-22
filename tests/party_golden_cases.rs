@@ -32,6 +32,7 @@ fn nik() -> String {
 
 fn party(code: &str) -> NewParty {
     NewParty {
+        company_id: Uuid::nil(),
         party_code: code.to_string(),
         party_kind: Some("organization".into()),
         name: "PT Test".into(),
@@ -101,9 +102,9 @@ async fn children_require_existing_party() {
     addr.line1 = "Jl. Test 1".into();
     assert!(matches!(svc.add_address(addr).await.unwrap_err(), PartyWriteError::PartyNotFound(_)));
 
-    let e = NewEmail { party_id: Uuid::new_v4(), label: None, email: "a@b.com".into(), is_primary: true };
+    let e = NewEmail { company_id: Uuid::nil(), party_id: Uuid::new_v4(), label: None, email: "a@b.com".into(), is_primary: true };
     assert!(matches!(svc.add_email(e).await.unwrap_err(), PartyWriteError::PartyNotFound(_)));
-    let ph = NewPhone { party_id: Uuid::new_v4(), label: None, phone: "0811".into(), is_primary: true };
+    let ph = NewPhone { company_id: Uuid::nil(), party_id: Uuid::new_v4(), label: None, phone: "0811".into(), is_primary: true };
     assert!(matches!(svc.add_phone(ph).await.unwrap_err(), PartyWriteError::PartyNotFound(_)));
 }
 
