@@ -51,6 +51,7 @@ impl std::ops::Deref for PartyId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Party {
     pub id: Uuid,
+    pub company_id: Uuid,
     pub party_code: String,
     pub party_kind: PartyKind,
     pub name: String,
@@ -73,9 +74,10 @@ impl Party {
     }
 
     /// Create a new Party with required fields
-    pub fn new(party_code: String, party_kind: PartyKind, name: String, status: PartyStatus) -> Self {
+    pub fn new(company_id: Uuid, party_code: String, party_kind: PartyKind, name: String, status: PartyStatus) -> Self {
         Self {
             id: Uuid::new_v4(),
+            company_id,
             party_code,
             party_kind,
             name,
@@ -194,6 +196,9 @@ impl Party {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
+                "company_id" => {
+                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
+                }
                 "party_code" => {
                     if let Ok(v) = serde_json::from_value(value) { self.party_code = v; }
                 }
@@ -278,12 +283,16 @@ impl backbone_orm::EntityRepoMeta for Party {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
+        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("party_kind".to_string(), "party_kind".to_string());
         m.insert("status".to_string(), "party_status".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &["party_code", "name"]
+    }
+    fn company_field() -> Option<&'static str> {
+        Some("company_id")
     }
 }
 
@@ -293,6 +302,7 @@ impl backbone_orm::EntityRepoMeta for Party {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct PartyBuilder {
+    company_id: Option<Uuid>,
     party_code: Option<String>,
     party_kind: Option<PartyKind>,
     name: Option<String>,
@@ -306,6 +316,12 @@ pub struct PartyBuilder {
 }
 
 impl PartyBuilder {
+    /// Set the company_id field (required)
+    pub fn company_id(mut self, value: Uuid) -> Self {
+        self.company_id = Some(value);
+        self
+    }
+
     /// Set the party_code field (required)
     pub fn party_code(mut self, value: String) -> Self {
         self.party_code = Some(value);
@@ -370,11 +386,13 @@ impl PartyBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<Party, String> {
+        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let party_code = self.party_code.ok_or_else(|| "party_code is required".to_string())?;
         let name = self.name.ok_or_else(|| "name is required".to_string())?;
 
         Ok(Party {
             id: Uuid::new_v4(),
+            company_id,
             party_code,
             party_kind: self.party_kind.unwrap_or(PartyKind::default()),
             name,

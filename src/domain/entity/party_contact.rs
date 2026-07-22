@@ -49,6 +49,7 @@ impl std::ops::Deref for PartyContactId {
 pub struct PartyContact {
     pub id: Uuid,
     pub party_id: Uuid,
+    pub company_id: Uuid,
     pub name: String,
     pub job_title: Option<String>,
     pub department: Option<String>,
@@ -67,10 +68,11 @@ impl PartyContact {
     }
 
     /// Create a new PartyContact with required fields
-    pub fn new(party_id: Uuid, name: String, is_primary: bool) -> Self {
+    pub fn new(party_id: Uuid, company_id: Uuid, name: String, is_primary: bool) -> Self {
         Self {
             id: Uuid::new_v4(),
             party_id,
+            company_id,
             name,
             job_title: None,
             department: None,
@@ -171,6 +173,9 @@ impl PartyContact {
                 "party_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.party_id = v; }
                 }
+                "company_id" => {
+                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
+                }
                 "name" => {
                     if let Ok(v) = serde_json::from_value(value) { self.name = v; }
                 }
@@ -244,10 +249,14 @@ impl backbone_orm::EntityRepoMeta for PartyContact {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("party_id".to_string(), "uuid".to_string());
+        m.insert("company_id".to_string(), "uuid".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &["name"]
+    }
+    fn company_field() -> Option<&'static str> {
+        Some("company_id")
     }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
         &[("party", "parties", "partyId")]
@@ -261,6 +270,7 @@ impl backbone_orm::EntityRepoMeta for PartyContact {
 #[derive(Debug, Clone, Default)]
 pub struct PartyContactBuilder {
     party_id: Option<Uuid>,
+    company_id: Option<Uuid>,
     name: Option<String>,
     job_title: Option<String>,
     department: Option<String>,
@@ -273,6 +283,12 @@ impl PartyContactBuilder {
     /// Set the party_id field (required)
     pub fn party_id(mut self, value: Uuid) -> Self {
         self.party_id = Some(value);
+        self
+    }
+
+    /// Set the company_id field (required)
+    pub fn company_id(mut self, value: Uuid) -> Self {
+        self.company_id = Some(value);
         self
     }
 
@@ -317,11 +333,13 @@ impl PartyContactBuilder {
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<PartyContact, String> {
         let party_id = self.party_id.ok_or_else(|| "party_id is required".to_string())?;
+        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let name = self.name.ok_or_else(|| "name is required".to_string())?;
 
         Ok(PartyContact {
             id: Uuid::new_v4(),
             party_id,
+            company_id,
             name,
             job_title: self.job_title,
             department: self.department,

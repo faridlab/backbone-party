@@ -53,6 +53,7 @@ impl std::ops::Deref for PartyAddressId {
 pub struct PartyAddress {
     pub id: Uuid,
     pub party_id: Uuid,
+    pub company_id: Uuid,
     pub address_type: AddressType,
     pub label: Option<String>,
     pub line1: String,
@@ -81,10 +82,11 @@ impl PartyAddress {
     }
 
     /// Create a new PartyAddress with required fields
-    pub fn new(party_id: Uuid, address_type: AddressType, line1: String, is_primary: bool, is_billing: bool, is_shipping: bool, status: PartyStatus) -> Self {
+    pub fn new(party_id: Uuid, company_id: Uuid, address_type: AddressType, line1: String, is_primary: bool, is_billing: bool, is_shipping: bool, status: PartyStatus) -> Self {
         Self {
             id: Uuid::new_v4(),
             party_id,
+            company_id,
             address_type,
             label: None,
             line1,
@@ -236,6 +238,9 @@ impl PartyAddress {
                 "party_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.party_id = v; }
                 }
+                "company_id" => {
+                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
+                }
                 "address_type" => {
                     if let Ok(v) = serde_json::from_value(value) { self.address_type = v; }
                 }
@@ -339,6 +344,7 @@ impl backbone_orm::EntityRepoMeta for PartyAddress {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("party_id".to_string(), "uuid".to_string());
+        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("country_id".to_string(), "uuid".to_string());
         m.insert("province_id".to_string(), "uuid".to_string());
         m.insert("city_id".to_string(), "uuid".to_string());
@@ -350,6 +356,9 @@ impl backbone_orm::EntityRepoMeta for PartyAddress {
     }
     fn search_fields() -> &'static [&'static str] {
         &["line1"]
+    }
+    fn company_field() -> Option<&'static str> {
+        Some("company_id")
     }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
         &[("party", "parties", "partyId")]
@@ -363,6 +372,7 @@ impl backbone_orm::EntityRepoMeta for PartyAddress {
 #[derive(Debug, Clone, Default)]
 pub struct PartyAddressBuilder {
     party_id: Option<Uuid>,
+    company_id: Option<Uuid>,
     address_type: Option<AddressType>,
     label: Option<String>,
     line1: Option<String>,
@@ -385,6 +395,12 @@ impl PartyAddressBuilder {
     /// Set the party_id field (required)
     pub fn party_id(mut self, value: Uuid) -> Self {
         self.party_id = Some(value);
+        self
+    }
+
+    /// Set the company_id field (required)
+    pub fn company_id(mut self, value: Uuid) -> Self {
+        self.company_id = Some(value);
         self
     }
 
@@ -489,11 +505,13 @@ impl PartyAddressBuilder {
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<PartyAddress, String> {
         let party_id = self.party_id.ok_or_else(|| "party_id is required".to_string())?;
+        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let line1 = self.line1.ok_or_else(|| "line1 is required".to_string())?;
 
         Ok(PartyAddress {
             id: Uuid::new_v4(),
             party_id,
+            company_id,
             address_type: self.address_type.unwrap_or(AddressType::default()),
             label: self.label,
             line1,

@@ -45,6 +45,7 @@ pub struct PartyEmailPaginatedResult {
 #[derive(Debug, Clone, Default)]
 pub struct PartyEmailFilter {
     pub party_id: Option<Uuid>,
+    pub company_id: Option<Uuid>,
     pub label: Option<String>,
     pub email: Option<String>,
     pub is_primary: Option<bool>,
@@ -53,7 +54,7 @@ pub struct PartyEmailFilter {
 impl PartyEmailFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.party_id.is_some() || self.label.is_some() || self.email.is_some() || self.is_primary.is_some()
+        self.party_id.is_some() || self.company_id.is_some() || self.label.is_some() || self.email.is_some() || self.is_primary.is_some()
     }
 }
 

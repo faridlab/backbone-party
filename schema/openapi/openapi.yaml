@@ -1859,6 +1859,7 @@ components:
       type: object
       required:
         - id
+        - company_id
         - party_code
         - party_kind
         - name
@@ -1866,6 +1867,9 @@ components:
         - metadata
       properties:
         id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         party_code:
@@ -1921,12 +1925,16 @@ components:
     CreatePartyRequest:
       type: object
       required:
+        - company_id
         - party_code
         - party_kind
         - name
         - status
         - metadata
       properties:
+        company_id:
+          type: string
+          format: uuid
         party_code:
           type: string
           maxLength: 30
@@ -1967,12 +1975,16 @@ components:
     UpdatePartyRequest:
       type: object
       required:
+        - company_id
         - party_code
         - party_kind
         - name
         - status
         - metadata
       properties:
+        company_id:
+          type: string
+          format: uuid
         party_code:
           type: string
           maxLength: 30
@@ -2013,6 +2025,9 @@ components:
     PatchPartyRequest:
       type: object
       properties:
+        company_id:
+          type: string
+          format: uuid
         party_code:
           type: string
           maxLength: 30
@@ -2065,6 +2080,7 @@ components:
       required:
         - id
         - party_id
+        - company_id
         - address_type
         - line1
         - is_primary
@@ -2077,6 +2093,9 @@ components:
           type: string
           format: uuid
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         address_type:
@@ -2150,6 +2169,7 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - address_type
         - line1
         - is_primary
@@ -2159,6 +2179,9 @@ components:
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         address_type:
@@ -2219,6 +2242,7 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - address_type
         - line1
         - is_primary
@@ -2228,6 +2252,9 @@ components:
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         address_type:
@@ -2288,6 +2315,9 @@ components:
       type: object
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         address_type:
@@ -2359,6 +2389,7 @@ components:
       required:
         - id
         - party_id
+        - company_id
         - name
         - is_primary
         - metadata
@@ -2367,6 +2398,9 @@ components:
           type: string
           format: uuid
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         name:
@@ -2410,11 +2444,15 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - name
         - is_primary
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         name:
@@ -2445,11 +2483,15 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - name
         - is_primary
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         name:
@@ -2480,6 +2522,9 @@ components:
       type: object
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         name:
@@ -2521,6 +2566,7 @@ components:
       required:
         - id
         - party_id
+        - company_id
         - label
         - email
         - is_primary
@@ -2530,6 +2576,9 @@ components:
           type: string
           format: uuid
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2560,12 +2609,16 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - label
         - email
         - is_primary
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2583,12 +2636,16 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - label
         - email
         - is_primary
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2606,6 +2663,9 @@ components:
       type: object
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2634,6 +2694,7 @@ components:
       required:
         - id
         - party_id
+        - company_id
         - label
         - phone
         - is_primary
@@ -2643,6 +2704,9 @@ components:
           type: string
           format: uuid
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2673,12 +2737,16 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - label
         - phone
         - is_primary
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2696,12 +2764,16 @@ components:
       type: object
       required:
         - party_id
+        - company_id
         - label
         - phone
         - is_primary
         - metadata
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
@@ -2719,6 +2791,9 @@ components:
       type: object
       properties:
         party_id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         label:
