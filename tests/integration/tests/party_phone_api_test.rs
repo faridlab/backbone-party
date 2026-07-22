@@ -25,6 +25,7 @@ impl TestDataGenerator for PartyPhoneTestData {
         json!({
             "id": Uuid::new_v4().to_string(),
             "party_id": Uuid::new_v4().to_string(),
+            "company_id": Uuid::new_v4().to_string(),
             "label": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "phone": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "is_primary": false,
@@ -37,6 +38,7 @@ impl TestDataGenerator for PartyPhoneTestData {
         json!({
             "id": id,
             "party_id": Uuid::new_v4().to_string(),
+            "company_id": Uuid::new_v4().to_string(),
             "label": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "phone": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "is_primary": false,

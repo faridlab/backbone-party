@@ -45,6 +45,7 @@ pub struct PartyAddressPaginatedResult {
 #[derive(Debug, Clone, Default)]
 pub struct PartyAddressFilter {
     pub party_id: Option<Uuid>,
+    pub company_id: Option<Uuid>,
     pub address_type: Option<AddressType>,
     pub label: Option<String>,
     pub line1: Option<String>,
@@ -64,7 +65,7 @@ pub struct PartyAddressFilter {
 impl PartyAddressFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.party_id.is_some() || self.address_type.is_some() || self.label.is_some() || self.line1.is_some() || self.line2.is_some() || self.country_id.is_some() || self.province_id.is_some() || self.city_id.is_some() || self.district_id.is_some() || self.subdistrict_id.is_some() || self.postal_code.is_some() || self.is_primary.is_some() || self.is_billing.is_some() || self.is_shipping.is_some() || self.status.is_some()
+        self.party_id.is_some() || self.company_id.is_some() || self.address_type.is_some() || self.label.is_some() || self.line1.is_some() || self.line2.is_some() || self.country_id.is_some() || self.province_id.is_some() || self.city_id.is_some() || self.district_id.is_some() || self.subdistrict_id.is_some() || self.postal_code.is_some() || self.is_primary.is_some() || self.is_billing.is_some() || self.is_shipping.is_some() || self.status.is_some()
     }
 }
 
