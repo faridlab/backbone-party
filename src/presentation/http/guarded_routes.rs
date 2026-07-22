@@ -8,6 +8,7 @@
 use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
+use backbone_orm::company_scope;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -36,6 +37,14 @@ fn err_response(e: PartyWriteError) -> axum::response::Response {
     (status, Json(ErrorBody { error: e.code(), message: e.to_string() })).into_response()
 }
 
+/// Resolve the caller's company from the request scope (ADR-0008: set by auth middleware via
+/// `with_request_scope`). Returns `Err` with a 401-shaped `PartyWriteError` if the scope is
+/// missing — every party write is tenant-bound (ADR-0010 B1), so an unset scope is a hard stop
+/// rather than a silent default.
+fn require_company() -> Result<Uuid, PartyWriteError> {
+    company_scope::current_company().ok_or(PartyWriteError::NoCompanyScope)
+}
+
 // ── Party ───────────────────────────────────────────────────────────────────────
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,8 +69,10 @@ async fn create_party(
     State(svc): State<Arc<PartyWriteService>>,
     Json(b): Json<CreatePartyBody>,
 ) -> axum::response::Response {
+    let company = match require_company() { Ok(c) => c, Err(e) => return err_response(e) };
     match svc
         .create_party(NewParty {
+            company_id: company,
             party_code: b.party_code,
             party_kind: b.party_kind,
             name: b.name,
@@ -118,8 +129,10 @@ async fn add_address(
     State(svc): State<Arc<PartyWriteService>>,
     Json(b): Json<AddAddressBody>,
 ) -> axum::response::Response {
+    let company = match require_company() { Ok(c) => c, Err(e) => return err_response(e) };
     match svc
         .add_address(NewAddress {
+            company_id: company,
             party_id: b.party_id,
             address_type: b.address_type,
             label: b.label,
@@ -165,8 +178,10 @@ async fn add_contact(
     State(svc): State<Arc<PartyWriteService>>,
     Json(b): Json<AddContactBody>,
 ) -> axum::response::Response {
+    let company = match require_company() { Ok(c) => c, Err(e) => return err_response(e) };
     match svc
         .add_contact(NewContact {
+            company_id: company,
             party_id: b.party_id,
             name: b.name,
             job_title: b.job_title,
@@ -196,8 +211,15 @@ async fn add_email(
     State(svc): State<Arc<PartyWriteService>>,
     Json(b): Json<AddEmailBody>,
 ) -> axum::response::Response {
+    let company = match require_company() { Ok(c) => c, Err(e) => return err_response(e) };
     match svc
-        .add_email(NewEmail { party_id: b.party_id, label: b.label, email: b.email, is_primary: b.is_primary })
+        .add_email(NewEmail {
+            company_id: company,
+            party_id: b.party_id,
+            label: b.label,
+            email: b.email,
+            is_primary: b.is_primary,
+        })
         .await
     {
         Ok(id) => (StatusCode::CREATED, Json(IdResponse { id })).into_response(),
@@ -219,8 +241,15 @@ async fn add_phone(
     State(svc): State<Arc<PartyWriteService>>,
     Json(b): Json<AddPhoneBody>,
 ) -> axum::response::Response {
+    let company = match require_company() { Ok(c) => c, Err(e) => return err_response(e) };
     match svc
-        .add_phone(NewPhone { party_id: b.party_id, label: b.label, phone: b.phone, is_primary: b.is_primary })
+        .add_phone(NewPhone {
+            company_id: company,
+            party_id: b.party_id,
+            label: b.label,
+            phone: b.phone,
+            is_primary: b.is_primary,
+        })
         .await
     {
         Ok(id) => (StatusCode::CREATED, Json(IdResponse { id })).into_response(),

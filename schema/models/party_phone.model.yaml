@@ -20,6 +20,13 @@ models:
         attributes: ["@required", "@foreign_key(Party.id)"]
         description: "Owning party"
 
+      # Tenant scope (ADR-0010 B1) — logical FK to organization.Company.id (NO hard SQL FK).
+      # Denormalized from Party for per-company RLS fencing on this table.
+      company_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "Tenant scope # logical FK to organization.Company.id"
+
       label:
         type: string
         attributes: ["@default('mobile')", "@max(30)"]
@@ -49,8 +56,8 @@ models:
 
     indexes:
       - type: index
-        fields: [party_id, is_primary]
-      # At most ONE primary per party (council 2026-07-02) — soft-delete aware.
+        fields: [company_id, party_id, is_primary]
+      # At most ONE primary per party (council 2026-07-02) — soft-delete aware, per-company (ADR-0010 B1).
       - type: unique
-        fields: [party_id]
+        fields: [company_id, party_id]
         where: "is_primary AND deleted_at IS NULL"

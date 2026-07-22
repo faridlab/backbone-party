@@ -18,10 +18,17 @@ models:
         attributes: ["@id", "@default(uuid)"]
         description: "Unique party identifier"
 
+      # Tenant scope (ADR-0010 B1) — logical FK to organization.Company.id (NO hard SQL FK;
+      # modules own their own schema and stay independently deployable). RLS is the fence.
+      company_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "Tenant scope # logical FK to organization.Company.id"
+
       party_code:
         type: string
         attributes: ["@required", "@max(30)"]
-        description: "Short unique code"
+        description: "Short unique code (unique per company)"
 
       party_kind:
         type: PartyKind
@@ -102,19 +109,20 @@ models:
         inverse: party
 
     indexes:
+      # Per-company uniques (ADR-0010 B1) — composite replaces the former global uniques.
       - type: unique
-        fields: [party_code]
+        fields: [company_id, party_code]
         where: "deleted_at IS NULL"
       - type: unique
-        fields: [npwp]
+        fields: [company_id, npwp]
         where: "npwp IS NOT NULL AND deleted_at IS NULL"
       - type: unique
-        fields: [nik]
+        fields: [company_id, nik]
         where: "nik IS NOT NULL AND deleted_at IS NULL"
       - type: index
-        fields: [party_kind, status]
+        fields: [company_id, party_kind, status]
       - type: index
-        fields: [name]
+        fields: [company_id, name]
 
 # =============================================================================
 # Enums
