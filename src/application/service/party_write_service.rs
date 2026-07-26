@@ -9,11 +9,21 @@
 //! `company_scope::current_company()` by the guarded route, or passed via `New*.company_id`) is
 //! bound into every INSERT and into `with_company_scope` so the RLS WITH CHECK accepts the row.
 //! Defense-in-depth on top of the ADR-0008 fence: a missed scope still fails closed.
+//!
+//! SQL lives in the repositories (`PartyRepository`, `PartyAddressRepository`, …), not here, per
+//! the module's 4-layer rule. This service only orchestrates validation + dispatch + the
+//! duplicate-key → typed-error mapping.
 
 use backbone_orm::company_scope;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::infrastructure::persistence::{
+    NewPartyAddressRow, NewPartyContactRow, NewPartyEmailRow, NewPartyPhoneRow, NewPartyRow,
+    PartyAddressRepository, PartyContactRepository, PartyEmailRepository, PartyPhoneRepository,
+    PartyRepository,
+};
 
 #[derive(Debug)]
 pub enum PartyWriteError {
@@ -175,19 +185,11 @@ impl PartyWriteService {
         e.as_database_error().map(|d| d.is_unique_violation()).unwrap_or(false)
     }
 
-    /// Existence check filtered by the caller's company. The `($2::uuid IS NULL OR company_id = $2)`
-    /// shape preserves fail-closed behavior under RLS even if the request scope wasn't set
-    /// (missed scope → no rows returned).
+    /// Existence check filtered by the caller's company. The scope wrapper preserves fail-closed
+    /// behavior under RLS even if the request scope wasn't set (missed scope → no rows returned).
     async fn party_exists_in(&self, id: Uuid, company: Uuid) -> Result<bool, PartyWriteError> {
-        let found: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM party.parties \
-             WHERE id = $1 AND company_id = $2 AND (metadata->>'deleted_at') IS NULL",
-        )
-        .bind(id)
-        .bind(company)
-        .fetch_optional(&self.db_pool)
-        .await?;
-        Ok(found.is_some())
+        let parties = PartyRepository::new(self.db_pool.clone());
+        Ok(parties.find_active_id_in_company(&self.db_pool, id, company).await?.is_some())
     }
 
     pub async fn create_party(&self, p: NewParty) -> Result<Uuid, PartyWriteError> {
@@ -230,24 +232,22 @@ impl PartyWriteService {
                 _ => {}
             }
             let id = Uuid::new_v4();
-            let r = sqlx::query(
-                r#"INSERT INTO party.parties
-                    (id, company_id, party_code, party_kind, name, legal_name, first_name, last_name,
-                     npwp, nik, status)
-                   VALUES ($1,$2,$3,$4::party_kind,$5,$6,$7,$8,$9,$10,'active'::party_status)"#,
-            )
-            .bind(id)
-            .bind(company)
-            .bind(&p.party_code)
-            .bind(&kind)
-            .bind(&p.name)
-            .bind(&p.legal_name)
-            .bind(&p.first_name)
-            .bind(&p.last_name)
-            .bind(&p.npwp)
-            .bind(&p.nik)
-            .execute(&self.db_pool)
-            .await;
+            let parties = PartyRepository::new(self.db_pool.clone());
+            let r = parties.insert_from_new(
+                &self.db_pool,
+                &NewPartyRow {
+                    id,
+                    company_id: company,
+                    party_code: &p.party_code,
+                    party_kind: &kind,
+                    name: &p.name,
+                    legal_name: p.legal_name.as_deref(),
+                    first_name: p.first_name.as_deref(),
+                    last_name: p.last_name.as_deref(),
+                    npwp: p.npwp.as_deref(),
+                    nik: p.nik.as_deref(),
+                },
+            ).await;
             match r {
                 Ok(_) => Ok(id),
                 Err(e) if Self::is_dup(&e, "npwp") => Err(PartyWriteError::DuplicateNpwp(p.npwp.unwrap_or_default())),
@@ -268,33 +268,30 @@ impl PartyWriteService {
             }
             let id = Uuid::new_v4();
             let atype = a.address_type.clone().unwrap_or_else(|| "home".to_string());
-            let r = sqlx::query(
-                r#"INSERT INTO party.party_addresses
-                    (id, company_id, party_id, address_type, label, line1, line2, country_id, province_id,
-                     city_id, district_id, subdistrict_id, postal_code, latitude, longitude, is_primary,
-                     is_billing, is_shipping, status)
-                   VALUES ($1,$2,$3,$4::address_type,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'active'::party_status)"#,
-            )
-            .bind(id)
-            .bind(company)
-            .bind(a.party_id)
-            .bind(&atype)
-            .bind(&a.label)
-            .bind(&a.line1)
-            .bind(&a.line2)
-            .bind(a.country_id)
-            .bind(a.province_id)
-            .bind(a.city_id)
-            .bind(a.district_id)
-            .bind(a.subdistrict_id)
-            .bind(&a.postal_code)
-            .bind(a.latitude)
-            .bind(a.longitude)
-            .bind(a.is_primary)
-            .bind(a.is_billing)
-            .bind(a.is_shipping)
-            .execute(&self.db_pool)
-            .await;
+            let addresses = PartyAddressRepository::new(self.db_pool.clone());
+            let r = addresses.insert_from_new(
+                &self.db_pool,
+                &NewPartyAddressRow {
+                    id,
+                    company_id: company,
+                    party_id: a.party_id,
+                    address_type: &atype,
+                    label: a.label.as_deref(),
+                    line1: &a.line1,
+                    line2: a.line2.as_deref(),
+                    country_id: a.country_id,
+                    province_id: a.province_id,
+                    city_id: a.city_id,
+                    district_id: a.district_id,
+                    subdistrict_id: a.subdistrict_id,
+                    postal_code: a.postal_code.as_deref(),
+                    latitude: a.latitude,
+                    longitude: a.longitude,
+                    is_primary: a.is_primary,
+                    is_billing: a.is_billing,
+                    is_shipping: a.is_shipping,
+                },
+            ).await;
             Self::ok_or_primary(r, id, "address")
         }).await
     }
@@ -306,22 +303,21 @@ impl PartyWriteService {
                 return Err(PartyWriteError::PartyNotFound(c.party_id));
             }
             let id = Uuid::new_v4();
-            let r = sqlx::query(
-                r#"INSERT INTO party.party_contacts
-                    (id, company_id, party_id, name, job_title, department, email, phone, is_primary)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"#,
-            )
-            .bind(id)
-            .bind(company)
-            .bind(c.party_id)
-            .bind(&c.name)
-            .bind(&c.job_title)
-            .bind(&c.department)
-            .bind(&c.email)
-            .bind(&c.phone)
-            .bind(c.is_primary)
-            .execute(&self.db_pool)
-            .await;
+            let contacts = PartyContactRepository::new(self.db_pool.clone());
+            let r = contacts.insert_from_new(
+                &self.db_pool,
+                &NewPartyContactRow {
+                    id,
+                    company_id: company,
+                    party_id: c.party_id,
+                    name: &c.name,
+                    job_title: c.job_title.as_deref(),
+                    department: c.department.as_deref(),
+                    email: c.email.as_deref(),
+                    phone: c.phone.as_deref(),
+                    is_primary: c.is_primary,
+                },
+            ).await;
             Self::ok_or_primary(r, id, "contact")
         }).await
     }
@@ -337,18 +333,18 @@ impl PartyWriteService {
             }
             let id = Uuid::new_v4();
             let label = e.label.clone().unwrap_or_else(|| "main".to_string());
-            let r = sqlx::query(
-                "INSERT INTO party.party_emails (id, company_id, party_id, label, email, is_primary) \
-                 VALUES ($1,$2,$3,$4,$5,$6)",
-            )
-            .bind(id)
-            .bind(company)
-            .bind(e.party_id)
-            .bind(&label)
-            .bind(&e.email)
-            .bind(e.is_primary)
-            .execute(&self.db_pool)
-            .await;
+            let emails = PartyEmailRepository::new(self.db_pool.clone());
+            let r = emails.insert_from_new(
+                &self.db_pool,
+                &NewPartyEmailRow {
+                    id,
+                    company_id: company,
+                    party_id: e.party_id,
+                    label: &label,
+                    email: &e.email,
+                    is_primary: e.is_primary,
+                },
+            ).await;
             Self::ok_or_primary(r, id, "email")
         }).await
     }
@@ -361,24 +357,24 @@ impl PartyWriteService {
             }
             let id = Uuid::new_v4();
             let label = p.label.clone().unwrap_or_else(|| "mobile".to_string());
-            let r = sqlx::query(
-                "INSERT INTO party.party_phones (id, company_id, party_id, label, phone, is_primary) \
-                 VALUES ($1,$2,$3,$4,$5,$6)",
-            )
-            .bind(id)
-            .bind(company)
-            .bind(p.party_id)
-            .bind(&label)
-            .bind(&p.phone)
-            .bind(p.is_primary)
-            .execute(&self.db_pool)
-            .await;
+            let phones = PartyPhoneRepository::new(self.db_pool.clone());
+            let r = phones.insert_from_new(
+                &self.db_pool,
+                &NewPartyPhoneRow {
+                    id,
+                    company_id: company,
+                    party_id: p.party_id,
+                    label: &label,
+                    phone: &p.phone,
+                    is_primary: p.is_primary,
+                },
+            ).await;
             Self::ok_or_primary(r, id, "phone")
         }).await
     }
 
     fn ok_or_primary(
-        r: Result<sqlx::postgres::PgQueryResult, sqlx::Error>,
+        r: Result<(), sqlx::Error>,
         id: Uuid,
         kind: &'static str,
     ) -> Result<Uuid, PartyWriteError> {
@@ -394,6 +390,10 @@ impl PartyWriteService {
     /// invariant switchable, since the guarded surface is otherwise create-only).
     /// Company-scoped: the caller's company (from the request scope) filters the lookup AND binds
     /// into the transaction so the RLS WITH CHECK accepts the writes.
+    ///
+    /// Dispatches on `kind` to the per-child repository's `clear_primary_for_party` +
+    /// `set_primary_child` methods, killing the old `format!("UPDATE party.{table} …")` smell —
+    /// each repo knows its own table at compile time.
     pub async fn set_primary(
         &self,
         party_id: Uuid,
@@ -402,13 +402,11 @@ impl PartyWriteService {
     ) -> Result<(), PartyWriteError> {
         let company = company_scope::current_company()
             .ok_or(PartyWriteError::NoCompanyScope)?;
-        let table = match kind {
-            "address" => "party_addresses",
-            "contact" => "party_contacts",
-            "email" => "party_emails",
-            "phone" => "party_phones",
+        // Validate kind BEFORE opening the tx so unknown kinds bail with no side effects.
+        match kind {
+            "address" | "contact" | "email" | "phone" => {}
             _ => return Err(PartyWriteError::InconsistentKind(format!("unknown child kind: {kind}"))),
-        };
+        }
         if !self.party_exists_in(party_id, company).await? {
             return Err(PartyWriteError::PartyNotFound(party_id));
         }
@@ -417,16 +415,34 @@ impl PartyWriteService {
         // (ADR-0008 pattern for hand-written write services managing their own tx).
         company_scope::bind_current_company(&mut tx).await?;
         // Clear first (so the partial-unique index never sees two primaries mid-transaction).
-        sqlx::query(&format!(
-            "UPDATE party.{table} SET is_primary = FALSE WHERE party_id = $1 AND company_id = $2"
-        ))
-        .bind(party_id).bind(company).execute(&mut *tx).await?;
-        let n = sqlx::query(&format!(
-            "UPDATE party.{table} SET is_primary = TRUE \
-             WHERE id = $1 AND party_id = $2 AND company_id = $3 AND (metadata->>'deleted_at') IS NULL"
-        ))
-        .bind(child_id).bind(party_id).bind(company).execute(&mut *tx).await?;
-        if n.rows_affected() == 0 {
+        // Dispatch to the per-child repo so the table name is a compile-time constant, not a
+        // string-built identifier.
+        let n = match kind {
+            "address" => {
+                let repo = PartyAddressRepository::new(self.db_pool.clone());
+                repo.clear_primary_for_party(&mut *tx, party_id, company).await?;
+                repo.set_primary_child(&mut *tx, child_id, party_id, company).await?
+            }
+            "contact" => {
+                let repo = PartyContactRepository::new(self.db_pool.clone());
+                repo.clear_primary_for_party(&mut *tx, party_id, company).await?;
+                repo.set_primary_child(&mut *tx, child_id, party_id, company).await?
+            }
+            "email" => {
+                let repo = PartyEmailRepository::new(self.db_pool.clone());
+                repo.clear_primary_for_party(&mut *tx, party_id, company).await?;
+                repo.set_primary_child(&mut *tx, child_id, party_id, company).await?
+            }
+            "phone" => {
+                let repo = PartyPhoneRepository::new(self.db_pool.clone());
+                repo.clear_primary_for_party(&mut *tx, party_id, company).await?;
+                repo.set_primary_child(&mut *tx, child_id, party_id, company).await?
+            }
+            // Unreachable: validated above. Match kept exhaustive so adding a new kind without
+            // wiring its repo is a compile-time error, not a silent fall-through.
+            _ => unreachable!("kind validated above"),
+        };
+        if n == 0 {
             drop(tx);
             return Err(PartyWriteError::PartyNotFound(child_id));
         }
