@@ -14,6 +14,15 @@ user_owned:
   # Validated write path + guarded route composition.
   - "src/application/service/party_write_service.rs"
   - "src/presentation/http/guarded_routes.rs"
+  # Own the hand-written party SQL (the validated write path's existence probe, the
+  # party + child inserts, and the per-child primary switch) that party_write_service orchestrates.
+  # Declared here — not renamed with a `_custom` suffix — so the generator skips them wholesale;
+  # this declaration is what makes editing them legitimate.
+  - "src/infrastructure/persistence/party_repository.rs"
+  - "src/infrastructure/persistence/party_address_repository.rs"
+  - "src/infrastructure/persistence/party_contact_repository.rs"
+  - "src/infrastructure/persistence/party_email_repository.rs"
+  - "src/infrastructure/persistence/party_phone_repository.rs"
 
   # Behavior tests (the golden cases / oracle) + route-level probes + BDD features.
   - "tests/party_golden_cases.rs"
