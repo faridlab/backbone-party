@@ -5,8 +5,6 @@
 //! These services provide the public API for other modules.
 //! They only expose read operations - writes go through events.
 
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
 use uuid::Uuid;
@@ -68,21 +66,6 @@ pub trait PartyQueryService: Send + Sync {
     /// Check if PartyPhone exists
     async fn party_phone_exists(&self, id: PartyPhoneId) -> Result<bool>;
 
-}
-
-// ============================================================================
-// QUERY SERVICE IMPLEMENTATION
-// ============================================================================
-
-/// Default implementation of PartyQueryService
-pub struct PartyQueryServiceImpl<R> {
-    repository: Arc<R>,
-}
-
-impl<R> PartyQueryServiceImpl<R> {
-    pub fn new(repository: Arc<R>) -> Self {
-        Self { repository }
-    }
 }
 
 // ============================================================================

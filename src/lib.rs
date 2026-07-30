@@ -61,11 +61,11 @@ use sqlx::PgPool;
 /// let router = party.all_crud_routes();
 /// ```
 pub struct PartyModule {
-    pub party_service: Arc<PartyService>,
-    pub party_address_service: Arc<PartyAddressService>,
-    pub party_contact_service: Arc<PartyContactService>,
-    pub party_email_service: Arc<PartyEmailService>,
-    pub party_phone_service: Arc<PartyPhoneService>,
+    pub(crate) party_service: Arc<PartyService>,
+    pub(crate) party_address_service: Arc<PartyAddressService>,
+    pub(crate) party_contact_service: Arc<PartyContactService>,
+    pub(crate) party_email_service: Arc<PartyEmailService>,
+    pub(crate) party_phone_service: Arc<PartyPhoneService>,
     // <<< CUSTOM
     /// Validated party + child writes (NPWP/NIK format+uniqueness, party existence).
     pub party_write_service: Arc<PartyWriteService>,
