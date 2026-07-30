@@ -21,3 +21,6 @@ Thumbs.db
 # Logs
 *.log
 .claude/
+
+# Graphify (local knowledge graph — regenerable, never committed)
+graphify-out/
