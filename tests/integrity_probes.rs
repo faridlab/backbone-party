@@ -1,6 +1,9 @@
 //! Council integrity probes — route-level. The guarded composition locks generic writes and
 //! enforces validation on the sanctioned create path. Hits routes via tower oneshot.
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
+//!
+//! Every request runs inside a company scope, the same way the composing service's auth
+//! middleware binds it in production (ADR-0008) — an unscoped write is a 401 by design.
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -8,7 +11,7 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use backbone_party::{create_guarded_party_routes, PartyModule};
+use backbone_party::{company_scope, create_guarded_party_routes, PartyModule};
 
 async fn pool() -> PgPool {
     let url = std::env::var("DATABASE_URL")
@@ -18,11 +21,15 @@ async fn pool() -> PgPool {
 async fn module(pool: &PgPool) -> PartyModule {
     PartyModule::builder().with_database(pool.clone()).build().unwrap()
 }
+fn probe_company() -> Uuid {
+    // party.company_id is a bare tenant column (ADR-0010 B1) with no FK, so any UUID binds.
+    Uuid::parse_str("5f0d6a52-9c1e-4b7a-8d34-2f6b1c9a0e77").unwrap()
+}
 async fn post(app: axum::Router, uri: &str, body: String) -> StatusCode {
-    app.oneshot(
-        Request::builder().method("POST").uri(uri)
-            .header("content-type", "application/json").body(Body::from(body)).unwrap(),
-    ).await.unwrap().status()
+    let req = Request::builder().method("POST").uri(uri)
+        .header("content-type", "application/json").body(Body::from(body)).unwrap();
+    company_scope::with_company_scope(Some(probe_company()), app.oneshot(req))
+        .await.unwrap().status()
 }
 fn uq(p: &str) -> String { format!("{p}-{}", &Uuid::new_v4().simple().to_string()[..8]) }
 
