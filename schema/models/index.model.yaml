@@ -12,6 +12,14 @@
 module: party
 version: 2
 schema: party
+# ADR-0014 fence posture: shared_blank — master-data posture. Rows with a NULL
+# company_id are SHARED across every company (one canonical "PT Telkom" identity
+# in the address book); non-NULL rows stay company-private. company_id keeps
+# NOT NULL for now: the policy's `OR company_id IS NULL` arm is dead-but-
+# harmless until the nullable relaxation ships as its own feature-driven
+# migration. The validator warning about that dead arm is accepted and
+# documented here.
+company_fence: shared_blank
 description: "Canonical party identity (person/organization) + multi-channel address book. Customer/Supplier/Employee are projections in selling/buying/payroll (docs/erp/shared-masters-ownership.md)."
 
 config:
