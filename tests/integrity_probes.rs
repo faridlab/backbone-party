@@ -2,16 +2,20 @@
 //! enforces validation on the sanctioned create path. Hits routes via tower oneshot.
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
 //!
-//! Every request runs inside a company scope, the same way the composing service's auth
-//! middleware binds it in production (ADR-0008) — an unscoped write is a 401 by design.
+//! Every request runs behind the REAL `company_auth` middleware with a minted HS256 token —
+//! the same mounting a composing service uses in production (ADR-0008). The previous harness
+//! bound `company_scope`'s task-local directly, which only exercises the middleware's fallback
+//! path and masked the extractor-vs-task-local divergence fixed in guarded_routes.rs.
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
+use axum::middleware::from_fn_with_state;
 use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use backbone_party::{company_scope, create_guarded_party_routes, PartyModule};
+use backbone_auth::company::{company_auth, CompanyVerifier};
+use backbone_party::{create_guarded_party_routes, PartyModule};
 
 async fn pool() -> PgPool {
     let url = std::env::var("DATABASE_URL")
@@ -25,11 +29,28 @@ fn probe_company() -> Uuid {
     // party.company_id is a bare tenant column (ADR-0010 B1) with no FK, so any UUID binds.
     Uuid::parse_str("5f0d6a52-9c1e-4b7a-8d34-2f6b1c9a0e77").unwrap()
 }
+fn probe_token() -> String {
+    const SECRET: &[u8] = b"party-integrity-probe-secret";
+    let exp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize
+        + 3600;
+    let claims = serde_json::json!({"sub": "integrity-probe", "company_id": probe_company(), "exp": exp});
+    jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &claims,
+        &jsonwebtoken::EncodingKey::from_secret(SECRET),
+    ).unwrap()
+}
 async fn post(app: axum::Router, uri: &str, body: String) -> StatusCode {
+    let app = app.route_layer(from_fn_with_state(
+        CompanyVerifier::hs256(b"party-integrity-probe-secret"),
+        company_auth,
+    ));
     let req = Request::builder().method("POST").uri(uri)
-        .header("content-type", "application/json").body(Body::from(body)).unwrap();
-    company_scope::with_company_scope(Some(probe_company()), app.oneshot(req))
-        .await.unwrap().status()
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", probe_token()))
+        .body(Body::from(body)).unwrap();
+    app.oneshot(req).await.unwrap().status()
 }
 fn uq(p: &str) -> String { format!("{p}-{}", &Uuid::new_v4().simple().to_string()[..8]) }
 
