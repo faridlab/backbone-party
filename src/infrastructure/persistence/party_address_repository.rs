@@ -61,38 +61,41 @@ pub struct NewPartyAddressRow<'a> {
 
 /// Party-address write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
 impl PartyAddressRepository {
-    /// Insert an address on the caller's pool. The caller has already established the company scope.
+    /// Insert an address, scoped so the RLS WITH CHECK sees `app.company_id` (a raw
+    /// `.execute(pool)` lands on an unfenced pooled connection and a non-owner role is rejected).
     pub async fn insert_from_new(
         &self,
         pool: &PgPool,
         r: &NewPartyAddressRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"INSERT INTO party.party_addresses
-                (id, company_id, party_id, address_type, label, line1, line2, country_id, province_id,
-                 city_id, district_id, subdistrict_id, postal_code, latitude, longitude, is_primary,
-                 is_billing, is_shipping, status)
-               VALUES ($1,$2,$3,$4::address_type,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'active'::party_status)"#,
+        backbone_orm::company_scope::execute_scoped(
+            pool,
+            sqlx::query(
+                r#"INSERT INTO party.party_addresses
+                    (id, company_id, party_id, address_type, label, line1, line2, country_id, province_id,
+                     city_id, district_id, subdistrict_id, postal_code, latitude, longitude, is_primary,
+                     is_billing, is_shipping, status)
+                   VALUES ($1,$2,$3,$4::address_type,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'active'::party_status)"#,
+            )
+            .bind(r.id)
+            .bind(r.company_id)
+            .bind(r.party_id)
+            .bind(r.address_type)
+            .bind(r.label)
+            .bind(r.line1)
+            .bind(r.line2)
+            .bind(r.country_id)
+            .bind(r.province_id)
+            .bind(r.city_id)
+            .bind(r.district_id)
+            .bind(r.subdistrict_id)
+            .bind(r.postal_code)
+            .bind(r.latitude)
+            .bind(r.longitude)
+            .bind(r.is_primary)
+            .bind(r.is_billing)
+            .bind(r.is_shipping),
         )
-        .bind(r.id)
-        .bind(r.company_id)
-        .bind(r.party_id)
-        .bind(r.address_type)
-        .bind(r.label)
-        .bind(r.line1)
-        .bind(r.line2)
-        .bind(r.country_id)
-        .bind(r.province_id)
-        .bind(r.city_id)
-        .bind(r.district_id)
-        .bind(r.subdistrict_id)
-        .bind(r.postal_code)
-        .bind(r.latitude)
-        .bind(r.longitude)
-        .bind(r.is_primary)
-        .bind(r.is_billing)
-        .bind(r.is_shipping)
-        .execute(pool)
         .await?;
         Ok(())
     }

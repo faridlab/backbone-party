@@ -48,23 +48,26 @@ pub struct NewPartyPhoneRow<'a> {
 
 /// Party-phone write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
 impl PartyPhoneRepository {
-    /// Insert a phone on the caller's pool. The caller has already established the company scope.
+    /// Insert a phone, scoped so the RLS WITH CHECK sees `app.company_id` (a raw
+    /// `.execute(pool)` lands on an unfenced pooled connection and a non-owner role is rejected).
     pub async fn insert_from_new(
         &self,
         pool: &PgPool,
         r: &NewPartyPhoneRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            "INSERT INTO party.party_phones (id, company_id, party_id, label, phone, is_primary) \
-             VALUES ($1,$2,$3,$4,$5,$6)",
+        backbone_orm::company_scope::execute_scoped(
+            pool,
+            sqlx::query(
+                "INSERT INTO party.party_phones (id, company_id, party_id, label, phone, is_primary) \
+                 VALUES ($1,$2,$3,$4,$5,$6)",
+            )
+            .bind(r.id)
+            .bind(r.company_id)
+            .bind(r.party_id)
+            .bind(r.label)
+            .bind(r.phone)
+            .bind(r.is_primary),
         )
-        .bind(r.id)
-        .bind(r.company_id)
-        .bind(r.party_id)
-        .bind(r.label)
-        .bind(r.phone)
-        .bind(r.is_primary)
-        .execute(pool)
         .await?;
         Ok(())
     }

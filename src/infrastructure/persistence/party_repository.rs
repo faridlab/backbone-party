@@ -52,50 +52,57 @@ pub struct NewPartyRow<'a> {
 
 /// Party write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
 impl PartyRepository {
-    /// Existence probe filtered by the caller's company. The caller wraps this in
-    /// `with_company_scope(Some(company), …)` so the ADR-0008 RLS fence admits the row; the explicit
-    /// `company_id=$2` filter stays as defense-in-depth. Soft-deleted rows are excluded.
+    /// Existence probe filtered by the caller's company. Runs through the scoped-execute helper so
+    /// it rides the request-dedicated connection (or the task-local scope) — a raw `fetch_optional`
+    /// lands on an unfenced pooled connection and the ADR-0008 fence returns nothing, even though
+    /// the explicit `company_id=$2` filter matches. Soft-deleted rows are excluded.
     pub async fn find_active_id_in_company(
         &self,
         pool: &PgPool,
         id: Uuid,
         company_id: Uuid,
     ) -> Result<Option<Uuid>, sqlx::Error> {
-        let row = sqlx::query(
-            "SELECT id FROM party.parties \
-             WHERE id = $1 AND company_id = $2 AND (metadata->>'deleted_at') IS NULL",
+        let row = backbone_orm::company_scope::fetch_optional_row_scoped(
+            pool,
+            sqlx::query(
+                "SELECT id FROM party.parties \
+                 WHERE id = $1 AND company_id = $2 AND (metadata->>'deleted_at') IS NULL",
+            )
+            .bind(id)
+            .bind(company_id),
         )
-        .bind(id)
-        .bind(company_id)
-        .fetch_optional(pool)
         .await?;
         Ok(row.map(|r| r.get::<Uuid, _>("id")))
     }
 
-    /// Insert a party on the caller's pool. The caller has already established the company scope
-    /// (via `with_company_scope`) so the RLS WITH CHECK accepts the row.
+    /// Insert a party, scoped so the RLS WITH CHECK sees `app.company_id`. A raw `.execute(pool)`
+    /// runs on an unfenced pooled connection — under a non-owner role the shared_blank fence
+    /// REJECTS the insert (silent 500 to the caller); the scoped helper rides the request
+    /// connection (strong scope) or binds transaction-locally (task-local scope).
     pub async fn insert_from_new(
         &self,
         pool: &PgPool,
         r: &NewPartyRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"INSERT INTO party.parties
-                (id, company_id, party_code, party_kind, name, legal_name, first_name, last_name,
-                 npwp, nik, status)
-               VALUES ($1,$2,$3,$4::party_kind,$5,$6,$7,$8,$9,$10,'active'::party_status)"#,
+        backbone_orm::company_scope::execute_scoped(
+            pool,
+            sqlx::query(
+                r#"INSERT INTO party.parties
+                    (id, company_id, party_code, party_kind, name, legal_name, first_name, last_name,
+                     npwp, nik, status)
+                   VALUES ($1,$2,$3,$4::party_kind,$5,$6,$7,$8,$9,$10,'active'::party_status)"#,
+            )
+            .bind(r.id)
+            .bind(r.company_id)
+            .bind(r.party_code)
+            .bind(r.party_kind)
+            .bind(r.name)
+            .bind(r.legal_name)
+            .bind(r.first_name)
+            .bind(r.last_name)
+            .bind(r.npwp)
+            .bind(r.nik),
         )
-        .bind(r.id)
-        .bind(r.company_id)
-        .bind(r.party_code)
-        .bind(r.party_kind)
-        .bind(r.name)
-        .bind(r.legal_name)
-        .bind(r.first_name)
-        .bind(r.last_name)
-        .bind(r.npwp)
-        .bind(r.nik)
-        .execute(pool)
         .await?;
         Ok(())
     }

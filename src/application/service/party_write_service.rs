@@ -5,10 +5,12 @@
 //! exists. Geo ids on an address are LOGICAL FKs (validated at the ACL layer / consuming service,
 //! not against geo's schema here — keeps party decoupled from geo).
 //!
-//! Tenant scope (ADR-0010 B1): every write is tenant-bound. The caller's company (resolved from
-//! `company_scope::current_company()` by the guarded route, or passed via `New*.company_id`) is
-//! bound into every INSERT and into `with_company_scope` so the RLS WITH CHECK accepts the row.
-//! Defense-in-depth on top of the ADR-0008 fence: a missed scope still fails closed.
+//! Tenant scope (ADR-0010 B1): every write is tenant-bound. The caller's company (the
+//! `CompanyContext` extension the `company_auth` middleware inserts, extracted by the guarded
+//! route — NOT `current_company()`, which the middleware's strong path leaves unset) is passed
+//! via `New*.company_id` / `set_primary` and bound into every INSERT and `with_company_scope`
+//! so the RLS WITH CHECK accepts the row. Defense-in-depth on top of the ADR-0008 fence: a
+//! missed scope still fails closed.
 //!
 //! SQL lives in the repositories (`PartyRepository`, `PartyAddressRepository`, …), not here, per
 //! the module's 4-layer rule. This service only orchestrates validation + dispatch + the
@@ -388,20 +390,20 @@ impl PartyWriteService {
     /// Switch which child of a kind is primary: clears is_primary on all of the party's children
     /// of that kind, then sets it on `child_id` — in one transaction (keeps the one-primary
     /// invariant switchable, since the guarded surface is otherwise create-only).
-    /// Company-scoped: the caller's company (from the request scope) filters the lookup AND binds
-    /// into the transaction so the RLS WITH CHECK accepts the writes.
+    /// Company-scoped: `company` (from the caller's signed token, passed by the guarded route —
+    /// NOT `current_company()`, which the auth middleware's strong path leaves unset) filters the
+    /// lookup AND binds onto the transaction so the RLS WITH CHECK accepts the writes.
     ///
     /// Dispatches on `kind` to the per-child repository's `clear_primary_for_party` +
     /// `set_primary_child` methods, killing the old `format!("UPDATE party.{table} …")` smell —
     /// each repo knows its own table at compile time.
     pub async fn set_primary(
         &self,
+        company: Uuid,
         party_id: Uuid,
         kind: &str,
         child_id: Uuid,
     ) -> Result<(), PartyWriteError> {
-        let company = company_scope::current_company()
-            .ok_or(PartyWriteError::NoCompanyScope)?;
         // Validate kind BEFORE opening the tx so unknown kinds bail with no side effects.
         match kind {
             "address" | "contact" | "email" | "phone" => {}
@@ -412,8 +414,9 @@ impl PartyWriteService {
         }
         let mut tx = self.db_pool.begin().await?;
         // Bind the caller's company onto this transaction so the RLS WITH CHECK accepts the writes
-        // (ADR-0008 pattern for hand-written write services managing their own tx).
-        company_scope::bind_current_company(&mut tx).await?;
+        // (ADR-0008 pattern for hand-written write services managing their own tx). Explicit, not
+        // `bind_current_company`, so it is correct even when no task-local scope is set.
+        company_scope::bind_company_on(&mut tx, company).await?;
         // Clear first (so the partial-unique index never sees two primaries mid-transaction).
         // Dispatch to the per-child repo so the table name is a compile-time constant, not a
         // string-built identifier.

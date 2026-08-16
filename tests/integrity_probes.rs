@@ -166,3 +166,64 @@ async fn guarded_set_primary_switches() {
         .bind(second).fetch_one(&pool).await.unwrap();
     assert!(is_second_primary, "the promoted address is now primary");
 }
+
+// IGC-8: guarded writes must pass the RLS fence as a NON-OWNER role. Every other probe runs on
+// the owner DSN, and the table owner BYPASSES row-level security — so a raw `.execute(pool)`
+// insert (never bound to `app.company_id`) passed all of them while failing with a silent 500
+// in production, where the app connects through a non-owner role and the shared_blank WITH CHECK
+// rejects the row. This probe connects through a dedicated app-style role and runs the full
+// write flow: create party → add two addresses → set-primary switch (exercises both the scoped
+// inserts and the explicit-company transaction).
+// Requires DATABASE_URL to be a role that may CREATE ROLE (the dev owner DSN qualifies).
+#[tokio::test]
+async fn guarded_writes_pass_rls_as_non_owner_role() {
+    const ROLE: &str = "party_rls_probe";
+    const PW: &str = "party_rls_probe_pw";
+    let admin = pool().await;
+    sqlx::raw_sql(&format!(
+        "DO $$ BEGIN \
+           IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{ROLE}') THEN \
+             EXECUTE 'DROP OWNED BY {ROLE}'; \
+           END IF; \
+         END $$; \
+         DROP ROLE IF EXISTS {ROLE}; \
+         CREATE ROLE {ROLE} LOGIN PASSWORD '{PW}'; \
+         GRANT USAGE ON SCHEMA party TO {ROLE}; \
+         GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA party TO {ROLE};"
+    ))
+    .execute(&admin)
+    .await
+    .expect("probe role bootstrap needs an owner-capable DATABASE_URL");
+
+    let after_at = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5433/backbone_party".to_string());
+    let after_at = after_at.rsplit('@').next().unwrap();
+    let app = PgPool::connect(&format!("postgresql://{ROLE}:{PW}@{after_at}")).await.unwrap();
+
+    // create party through the guarded surface as the non-owner role
+    let code = uq("RLS");
+    let ps = post(create_guarded_party_routes(&module(&app).await), "/parties",
+        format!(r#"{{"partyCode":"{code}","name":"PT Rls","legalName":"PT Rls Indonesia"}}"#)).await;
+    assert_eq!(ps, StatusCode::CREATED, "scoped party create must pass the RLS WITH CHECK as a non-owner role");
+
+    let pid: Uuid = sqlx::query_scalar("SELECT id FROM party.parties WHERE party_code=$1")
+        .bind(&code).fetch_one(&admin).await.unwrap();
+    let a1 = post(create_guarded_party_routes(&module(&app).await), "/party-addresses",
+        format!(r#"{{"partyId":"{pid}","line1":"Jl. First","isPrimary":true}}"#)).await;
+    assert_eq!(a1, StatusCode::CREATED, "scoped address insert must pass as a non-owner role");
+    let a2 = post(create_guarded_party_routes(&module(&app).await), "/party-addresses",
+        format!(r#"{{"partyId":"{pid}","line1":"Jl. Second"}}"#)).await;
+    assert_eq!(a2, StatusCode::CREATED);
+
+    // set-primary switch: exercises the service-managed tx with the explicit company bound on it
+    let second: Uuid = sqlx::query_scalar(
+        "SELECT id FROM party.party_addresses WHERE party_id=$1 AND line1='Jl. Second'")
+        .bind(pid).fetch_one(&admin).await.unwrap();
+    let s = post(create_guarded_party_routes(&module(&app).await), "/party-set-primary",
+        format!(r#"{{"partyId":"{pid}","kind":"address","childId":"{second}"}}"#)).await;
+    assert_eq!(s, StatusCode::OK, "set-primary tx must pass the fence as a non-owner role");
+
+    app.close().await;
+    sqlx::raw_sql(&format!("DROP OWNED BY {ROLE}; DROP ROLE {ROLE};"))
+        .execute(&admin).await.unwrap();
+}

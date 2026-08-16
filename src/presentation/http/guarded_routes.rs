@@ -275,9 +275,10 @@ struct SetPrimaryBody {
 }
 async fn set_primary(
     State(svc): State<Arc<PartyWriteService>>,
+    tenant: CompanyContext,
     Json(b): Json<SetPrimaryBody>,
 ) -> axum::response::Response {
-    match svc.set_primary(b.party_id, &b.kind, b.child_id).await {
+    match svc.set_primary(tenant.company_id, b.party_id, &b.kind, b.child_id).await {
         Ok(()) => (StatusCode::OK, Json(IdResponse { id: b.child_id })).into_response(),
         Err(e) => err_response(e),
     }
