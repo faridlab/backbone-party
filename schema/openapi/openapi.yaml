@@ -1900,6 +1900,10 @@ components:
           nullable: true
           type: string
           maxLength: 20
+        vat:
+          nullable: true
+          type: string
+          maxLength: 32
         status:
           type: string
         notes:
@@ -1963,6 +1967,10 @@ components:
           nullable: true
           type: string
           maxLength: 20
+        vat:
+          nullable: true
+          type: string
+          maxLength: 32
         status:
           type: string
         notes:
@@ -2013,6 +2021,10 @@ components:
           nullable: true
           type: string
           maxLength: 20
+        vat:
+          nullable: true
+          type: string
+          maxLength: 32
         status:
           type: string
         notes:
@@ -2056,6 +2068,10 @@ components:
           nullable: true
           type: string
           maxLength: 20
+        vat:
+          nullable: true
+          type: string
+          maxLength: 32
         status:
           type: string
         notes:

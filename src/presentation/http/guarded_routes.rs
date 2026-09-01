@@ -67,6 +67,8 @@ struct CreatePartyBody {
     npwp: Option<String>,
     #[serde(default)]
     nik: Option<String>,
+    #[serde(default)]
+    vat: Option<String>,
 }
 
 async fn create_party(
@@ -86,6 +88,7 @@ async fn create_party(
             last_name: b.last_name,
             npwp: b.npwp,
             nik: b.nik,
+            vat: b.vat,
         })
         .await
     {

@@ -61,7 +61,7 @@ pub struct PartyEmail {
 impl PartyEmail {
     /// Create a builder for PartyEmail
     pub fn builder() -> PartyEmailBuilder {
-        PartyEmailBuilder::default()
+        <PartyEmailBuilder as Default>::default()
     }
 
     /// Create a new PartyEmail with required fields

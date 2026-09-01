@@ -60,6 +60,7 @@ pub struct Party {
     pub last_name: Option<String>,
     pub npwp: Option<String>,
     pub nik: Option<String>,
+    pub vat: Option<String>,
     pub status: PartyStatus,
     pub notes: Option<String>,
     #[serde(default)]
@@ -70,7 +71,7 @@ pub struct Party {
 impl Party {
     /// Create a builder for Party
     pub fn builder() -> PartyBuilder {
-        PartyBuilder::default()
+        <PartyBuilder as Default>::default()
     }
 
     /// Create a new Party with required fields
@@ -86,6 +87,7 @@ impl Party {
             last_name: None,
             npwp: None,
             nik: None,
+            vat: None,
             status,
             notes: None,
             metadata: AuditMetadata::default(),
@@ -182,6 +184,12 @@ impl Party {
         self
     }
 
+    /// Set the vat field (chainable)
+    pub fn with_vat(mut self, value: String) -> Self {
+        self.vat = Some(value);
+        self
+    }
+
     /// Set the notes field (chainable)
     pub fn with_notes(mut self, value: String) -> Self {
         self.notes = Some(value);
@@ -222,6 +230,9 @@ impl Party {
                 }
                 "nik" => {
                     if let Ok(v) = serde_json::from_value(value) { self.nik = v; }
+                }
+                "vat" => {
+                    if let Ok(v) = serde_json::from_value(value) { self.vat = v; }
                 }
                 "status" => {
                     if let Ok(v) = serde_json::from_value(value) { self.status = v; }
@@ -311,6 +322,7 @@ pub struct PartyBuilder {
     last_name: Option<String>,
     npwp: Option<String>,
     nik: Option<String>,
+    vat: Option<String>,
     status: Option<PartyStatus>,
     notes: Option<String>,
 }
@@ -370,6 +382,12 @@ impl PartyBuilder {
         self
     }
 
+    /// Set the vat field (optional)
+    pub fn vat(mut self, value: String) -> Self {
+        self.vat = Some(value);
+        self
+    }
+
     /// Set the status field (default: `PartyStatus::default()`)
     pub fn status(mut self, value: PartyStatus) -> Self {
         self.status = Some(value);
@@ -394,14 +412,15 @@ impl PartyBuilder {
             id: Uuid::new_v4(),
             company_id,
             party_code,
-            party_kind: self.party_kind.unwrap_or(PartyKind::default()),
+            party_kind: self.party_kind.unwrap_or_default(),
             name,
             legal_name: self.legal_name,
             first_name: self.first_name,
             last_name: self.last_name,
             npwp: self.npwp,
             nik: self.nik,
-            status: self.status.unwrap_or(PartyStatus::default()),
+            vat: self.vat,
+            status: self.status.unwrap_or_default(),
             notes: self.notes,
             metadata: AuditMetadata::default(),
         })

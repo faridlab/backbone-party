@@ -7,6 +7,7 @@
 //! bound `company_scope`'s task-local directly, which only exercises the middleware's fallback
 //! path and masked the extractor-vs-task-local divergence fixed in guarded_routes.rs.
 
+#![expect(clippy::expect_used, reason = "test harness: a panic here names the setup failure precisely")]
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use axum::middleware::from_fn_with_state;

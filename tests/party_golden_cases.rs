@@ -3,6 +3,7 @@
 //! and that an address links to backbone-geo by logical FK (opaque uuid, no cross-module join).
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
 
+#![expect(clippy::expect_used, reason = "test harness: a panic here names the setup failure precisely")]
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -41,6 +42,7 @@ fn party(code: &str) -> NewParty {
         last_name: None,
         npwp: None,
         nik: None,
+        vat: None,
     }
 }
 

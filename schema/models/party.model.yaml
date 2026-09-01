@@ -68,6 +68,15 @@ models:
         attributes: ["@max(20)"]
         description: "Nomor Induk Kependudukan (national ID) — persons"
 
+      # Cross-border VAT number (country-prefixed, e.g. DE123456789). Validated fail-closed
+      # at the party write path: unknown-country prefixes are refused (see
+      # party_vat_validation.rs); '/' is the explicit no-VAT sentinel. VIES online checks
+      # stay fenced (re-entry only via backbone-integrations with real billing).
+      vat:
+        type: string?
+        attributes: ["@max(32)"]
+        description: "VAT number (country-prefixed); '/' = no VAT number"
+
       status:
         type: PartyStatus
         attributes: ["@default(active)"]

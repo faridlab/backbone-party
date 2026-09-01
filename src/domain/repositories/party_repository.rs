@@ -53,6 +53,7 @@ pub struct PartyFilter {
     pub last_name: Option<String>,
     pub npwp: Option<String>,
     pub nik: Option<String>,
+    pub vat: Option<String>,
     pub status: Option<PartyStatus>,
     pub notes: Option<String>,
 }
@@ -60,7 +61,7 @@ pub struct PartyFilter {
 impl PartyFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.party_code.is_some() || self.party_kind.is_some() || self.name.is_some() || self.legal_name.is_some() || self.first_name.is_some() || self.last_name.is_some() || self.npwp.is_some() || self.nik.is_some() || self.status.is_some() || self.notes.is_some()
+        self.company_id.is_some() || self.party_code.is_some() || self.party_kind.is_some() || self.name.is_some() || self.legal_name.is_some() || self.first_name.is_some() || self.last_name.is_some() || self.npwp.is_some() || self.nik.is_some() || self.vat.is_some() || self.status.is_some() || self.notes.is_some()
     }
 }
 

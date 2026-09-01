@@ -22,6 +22,7 @@ pub fn party_validator() -> PartyValidator {
         .rule(OptionalNotBlank::new("last_name", |e: &Party| e.last_name.as_deref()))
         .rule(OptionalNotBlank::new("npwp", |e: &Party| e.npwp.as_deref()))
         .rule(OptionalNotBlank::new("nik", |e: &Party| e.nik.as_deref()))
+        .rule(OptionalNotBlank::new("vat", |e: &Party| e.vat.as_deref()))
         .rule(OptionalNotBlank::new("notes", |e: &Party| e.notes.as_deref()))
     // <<< CUSTOM RULES
     // END CUSTOM RULES

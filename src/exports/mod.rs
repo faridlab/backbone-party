@@ -8,7 +8,7 @@
 //! ## Usage from other modules
 //!
 //! ```text
-//! use party::exports::{PartyDto, PartyQueryService};
+//! use party::exports::{PartyDto};
 //! ```
 
 mod types;
@@ -42,9 +42,6 @@ pub use events::*;
 /// - `PartyPhoneDto` - Data transfer object for PartyPhone
 /// - `PartyPhoneSummary` - Summary view of PartyPhone
 /// - `PartyPhoneId` - Type-safe ID wrapper
-///
-/// ## Public Services
-/// - `PartyQueryService` - Read-only queries
 ///
 /// ## Public Events
 /// - `PartyCreatedEvent` - Published when Party is created

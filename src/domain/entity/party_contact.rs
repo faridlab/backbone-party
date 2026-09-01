@@ -64,7 +64,7 @@ pub struct PartyContact {
 impl PartyContact {
     /// Create a builder for PartyContact
     pub fn builder() -> PartyContactBuilder {
-        PartyContactBuilder::default()
+        <PartyContactBuilder as Default>::default()
     }
 
     /// Create a new PartyContact with required fields

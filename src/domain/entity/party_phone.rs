@@ -61,7 +61,7 @@ pub struct PartyPhone {
 impl PartyPhone {
     /// Create a builder for PartyPhone
     pub fn builder() -> PartyPhoneBuilder {
-        PartyPhoneBuilder::default()
+        <PartyPhoneBuilder as Default>::default()
     }
 
     /// Create a new PartyPhone with required fields

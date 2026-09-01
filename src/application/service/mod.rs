@@ -14,6 +14,7 @@ pub mod party_email_service;
 pub mod party_phone_service;
 
 // <<< CUSTOM
+pub mod party_vat_validation;
 pub mod party_write_service;
 // END CUSTOM
 
@@ -23,6 +24,10 @@ pub use party_contact_service::PartyContactService;
 pub use party_email_service::PartyEmailService;
 pub use party_phone_service::PartyPhoneService;
 // <<< CUSTOM
+pub use party_vat_validation::{
+    normalize_vat, validate_vat, validate_vat_with, VatError, VatValidationPolicy,
+    ALLOW_UNKNOWN_COUNTRIES_ENV, NO_VAT_SENTINEL,
+};
 pub use party_write_service::{
     validate_nik, validate_npwp, NewAddress, NewContact, NewEmail, NewParty, NewPhone,
     PartyWriteError, PartyWriteService,

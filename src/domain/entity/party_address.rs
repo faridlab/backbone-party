@@ -78,7 +78,7 @@ pub struct PartyAddress {
 impl PartyAddress {
     /// Create a builder for PartyAddress
     pub fn builder() -> PartyAddressBuilder {
-        PartyAddressBuilder::default()
+        <PartyAddressBuilder as Default>::default()
     }
 
     /// Create a new PartyAddress with required fields
@@ -512,7 +512,7 @@ impl PartyAddressBuilder {
             id: Uuid::new_v4(),
             party_id,
             company_id,
-            address_type: self.address_type.unwrap_or(AddressType::default()),
+            address_type: self.address_type.unwrap_or_default(),
             label: self.label,
             line1,
             line2: self.line2,
@@ -527,7 +527,7 @@ impl PartyAddressBuilder {
             is_primary: self.is_primary.unwrap_or(false),
             is_billing: self.is_billing.unwrap_or(false),
             is_shipping: self.is_shipping.unwrap_or(false),
-            status: self.status.unwrap_or(PartyStatus::default()),
+            status: self.status.unwrap_or_default(),
             metadata: AuditMetadata::default(),
         })
     }

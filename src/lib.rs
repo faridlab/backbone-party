@@ -23,6 +23,7 @@ pub mod infrastructure;
 pub mod application;
 pub mod presentation;
 pub mod seeders;
+pub mod exports;
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -41,6 +42,10 @@ pub use application::service::PartyPhoneService;
 pub use application::service::{
     validate_nik, validate_npwp, NewAddress, NewContact, NewEmail, NewParty, NewPhone,
     PartyWriteError, PartyWriteService,
+};
+pub use application::service::party_vat_validation::{
+    normalize_vat, validate_vat, validate_vat_with, VatError, VatValidationPolicy,
+    ALLOW_UNKNOWN_COUNTRIES_ENV, NO_VAT_SENTINEL,
 };
 pub use presentation::http::create_guarded_party_routes;
 // Route-level tests bind the request company scope the way the composing service's auth
@@ -70,7 +75,7 @@ pub struct PartyModule {
     pub(crate) party_contact_service: Arc<PartyContactService>,
     pub(crate) party_email_service: Arc<PartyEmailService>,
     pub(crate) party_phone_service: Arc<PartyPhoneService>,
-    // <<< CUSTOM
+    // <<< CUSTOM FIELDS
     /// Validated party + child writes (NPWP/NIK format+uniqueness, party existence).
     pub party_write_service: Arc<PartyWriteService>,
     // END CUSTOM
@@ -109,10 +114,35 @@ impl PartyModule {
     /// mount exposes unguarded writes. Compose a guarded router (read + validated
     /// writes) for production, or call `all_crud_routes()` to opt into the full
     /// unguarded surface explicitly.
-    #[deprecated(note = "mounts unvalidated generic CRUD on every entity; compose a guarded router for production, or call all_crud_routes() for the intentional full/unguarded surface")]
+    #[deprecated(note = "mounts unvalidated generic CRUD; prefer readonly_routes() + validated writes, or all_crud_routes() for the full/unguarded surface")]
     pub fn routes(&self) -> Router {
         self.all_crud_routes()
     }
+
+    /// Read-only routes for every entity (GET endpoints only) — the safe base.
+    ///
+    /// Generic mutation can't reach here, so this surface cannot bypass a
+    /// validated write service's invariants. Use this as the production base and
+    /// merge validated write routes (or a write service's HTTP layer) onto it.
+    pub fn readonly_routes(&self) -> Router {
+        use presentation::http::{
+            create_party_read_routes,
+            create_party_address_read_routes,
+            create_party_contact_read_routes,
+            create_party_email_read_routes,
+            create_party_phone_read_routes,
+        };
+
+        Router::new()
+            .merge(create_party_read_routes(self.party_service.clone()))
+            .merge(create_party_address_read_routes(self.party_address_service.clone()))
+            .merge(create_party_contact_read_routes(self.party_contact_service.clone()))
+            .merge(create_party_email_read_routes(self.party_email_service.clone()))
+            .merge(create_party_phone_read_routes(self.party_phone_service.clone()))
+    }
+
+    // <<< CUSTOM METHODS
+    // END CUSTOM
 }
 
 /// Builder for PartyModule
@@ -163,7 +193,12 @@ impl PartyModuleBuilder {
         let party_phone_service = Arc::new(PartyPhoneService::with_repository(party_phone_repository.clone()));
 
         // <<< CUSTOM
-        let party_write_service = Arc::new(PartyWriteService::new(db_pool.clone()));
+        // VAT posture from the named configuration escape (fail-closed unless
+        // PARTY_VAT_ALLOW_UNKNOWN_COUNTRIES is explicitly armed).
+        let party_write_service = Arc::new(PartyWriteService::with_vat_policy(
+            db_pool.clone(),
+            VatValidationPolicy::from_env(),
+        ));
         // END CUSTOM
 
         Ok(PartyModule {

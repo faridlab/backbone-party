@@ -61,6 +61,9 @@ pub struct CreatePartyDto {
     #[cfg_attr(feature = "validation", validate(length(max = 20)))]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub nik: Option<String>,
+    #[cfg_attr(feature = "validation", validate(length(max = 32)))]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vat: Option<String>,
     pub status: PartyStatus,
     #[cfg_attr(feature = "validation", validate(length(max = 1000)))]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -107,6 +110,9 @@ pub struct UpdatePartyDto {
     #[cfg_attr(feature = "validation", validate(length(max = 20)))]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub nik: Option<String>,
+    #[cfg_attr(feature = "validation", validate(length(max = 32)))]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vat: Option<String>,
     pub status: PartyStatus,
     #[cfg_attr(feature = "validation", validate(length(max = 1000)))]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -154,6 +160,9 @@ pub struct PatchPartyDto {
     #[cfg_attr(feature = "validation", validate(length(max = 20)))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nik: Option<String>,
+    #[cfg_attr(feature = "validation", validate(length(max = 32)))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vat: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<PartyStatus>,
     #[cfg_attr(feature = "validation", validate(length(max = 1000)))]
@@ -164,7 +173,7 @@ pub struct PatchPartyDto {
 impl PatchPartyDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.party_code.is_some() || self.party_kind.is_some() || self.name.is_some() || self.legal_name.is_some() || self.first_name.is_some() || self.last_name.is_some() || self.npwp.is_some() || self.nik.is_some() || self.status.is_some() || self.notes.is_some()
+        self.company_id.is_some() || self.party_code.is_some() || self.party_kind.is_some() || self.name.is_some() || self.legal_name.is_some() || self.first_name.is_some() || self.last_name.is_some() || self.npwp.is_some() || self.nik.is_some() || self.vat.is_some() || self.status.is_some() || self.notes.is_some()
     }
 }
 
@@ -194,6 +203,7 @@ pub struct PartyResponseDto {
     pub last_name: Option<String>,
     pub npwp: Option<String>,
     pub nik: Option<String>,
+    pub vat: Option<String>,
     pub status: PartyStatus,
     pub notes: Option<String>,
     pub metadata: AuditMetadata,
@@ -276,6 +286,7 @@ impl From<Party> for PartyResponseDto {
             last_name: entity.last_name,
             npwp: entity.npwp,
             nik: entity.nik,
+            vat: entity.vat,
             status: entity.status,
             notes: entity.notes,
             metadata: entity.metadata,
@@ -309,6 +320,7 @@ impl From<CreatePartyDto> for Party {
             last_name: dto.last_name,
             npwp: dto.npwp,
             nik: dto.nik,
+            vat: dto.vat,
             status: dto.status,
             notes: dto.notes,
             metadata: AuditMetadata::default(),
@@ -329,6 +341,7 @@ impl From<&Party> for PartyResponseDto {
             last_name: entity.last_name.clone(),
             npwp: entity.npwp.clone(),
             nik: entity.nik.clone(),
+            vat: entity.vat.clone(),
             status: entity.status.clone(),
             notes: entity.notes.clone(),
             metadata: entity.metadata.clone(),
@@ -353,6 +366,7 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyDto> for Party {
         self.last_name = dto.last_name;
         self.npwp = dto.npwp;
         self.nik = dto.nik;
+        self.vat = dto.vat;
         self.status = dto.status;
         self.notes = dto.notes;
         Ok(self)

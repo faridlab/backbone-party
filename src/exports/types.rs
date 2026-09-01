@@ -58,6 +58,7 @@ pub struct PartyDto {
     pub last_name: Option<String>,
     pub npwp: Option<String>,
     pub nik: Option<String>,
+    pub vat: Option<String>,
     pub status: PartyStatus,
     pub notes: Option<String>,
     pub metadata: serde_json::Value,

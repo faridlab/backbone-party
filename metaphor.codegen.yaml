@@ -13,6 +13,9 @@
 user_owned:
   # Validated write path + guarded route composition.
   - "src/application/service/party_write_service.rs"
+  # Fail-closed cross-border VAT validation (country format table, GR->EL alias, BE mod-97,
+  # no-VAT sentinel, named unknown-country escape).
+  - "src/application/service/party_vat_validation.rs"
   - "src/presentation/http/guarded_routes.rs"
   # Own the hand-written party SQL (the validated write path's existence probe, the
   # party + child inserts, and the per-child primary switch) that party_write_service orchestrates.
@@ -24,10 +27,20 @@ user_owned:
   - "src/infrastructure/persistence/party_email_repository.rs"
   - "src/infrastructure/persistence/party_phone_repository.rs"
 
+  # Hand-authored migrations (the tenant-scope RLS, the shared-blank fence flip, the VAT column).
+  - "migrations/20260901120000_add_party_vat.up.sql"
+  - "migrations/20260901120000_add_party_vat.down.sql"
+
   # Behavior tests (the golden cases / oracle) + route-level probes + BDD features.
   - "tests/party_golden_cases.rs"
+  - "tests/vat_probes.rs"
   - "tests/integrity_probes.rs"
   - "tests/features/**"
+
+  # The integration-test target root — a module-declaration stub made user-owned so its
+  # crate-root lint expectation (the expect_used instrumented allow) covers the generated
+  # scaffold under tests/integration/ without editing generator-owned files.
+  - "tests/integration_tests.rs"
 
   # Hand-authored module documentation.
   - "docs/**"

@@ -48,6 +48,8 @@ pub struct NewPartyRow<'a> {
     pub last_name: Option<&'a str>,
     pub npwp: Option<&'a str>,
     pub nik: Option<&'a str>,
+    /// Cross-border VAT number in canonical form, or the '/' no-VAT sentinel.
+    pub vat: Option<&'a str>,
 }
 
 /// Party write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
@@ -89,8 +91,8 @@ impl PartyRepository {
             sqlx::query(
                 r#"INSERT INTO party.parties
                     (id, company_id, party_code, party_kind, name, legal_name, first_name, last_name,
-                     npwp, nik, status)
-                   VALUES ($1,$2,$3,$4::party_kind,$5,$6,$7,$8,$9,$10,'active'::party_status)"#,
+                     npwp, nik, vat, status)
+                   VALUES ($1,$2,$3,$4::party_kind,$5,$6,$7,$8,$9,$10,$11,'active'::party_status)"#,
             )
             .bind(r.id)
             .bind(r.company_id)
@@ -101,7 +103,8 @@ impl PartyRepository {
             .bind(r.first_name)
             .bind(r.last_name)
             .bind(r.npwp)
-            .bind(r.nik),
+            .bind(r.nik)
+            .bind(r.vat),
         )
         .await?;
         Ok(())

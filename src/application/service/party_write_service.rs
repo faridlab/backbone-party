@@ -21,6 +21,8 @@ use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::application::service::party_vat_validation::{validate_vat_with, VatError, VatValidationPolicy};
+
 use crate::infrastructure::persistence::{
     NewPartyAddressRow, NewPartyContactRow, NewPartyEmailRow, NewPartyPhoneRow, NewPartyRow,
     PartyAddressRepository, PartyContactRepository, PartyEmailRepository, PartyPhoneRepository,
@@ -35,6 +37,11 @@ pub enum PartyWriteError {
     DuplicateNik(String),
     InvalidNpwp(String),
     InvalidNik(String),
+    /// A VAT number whose country is KNOWN but whose shape/checksum is wrong.
+    InvalidVat(String),
+    /// A VAT number whose country prefix has no reviewed format — refused fail-closed
+    /// (distinct from InvalidVat so operators can see the escape may be the answer).
+    VatUnknownCountry(String),
     InvalidEmail(String),
     /// A party_kind/field mismatch (e.g. person with no name parts, org carrying a NIK).
     InconsistentKind(String),
@@ -55,6 +62,8 @@ impl PartyWriteError {
             PartyWriteError::DuplicateNik(_) => "duplicate_nik",
             PartyWriteError::InvalidNpwp(_) => "invalid_npwp",
             PartyWriteError::InvalidNik(_) => "invalid_nik",
+            PartyWriteError::InvalidVat(_) => "invalid_vat",
+            PartyWriteError::VatUnknownCountry(_) => "vat_unknown_country",
             PartyWriteError::InvalidEmail(_) => "invalid_email",
             PartyWriteError::InconsistentKind(_) => "inconsistent_party_kind",
             PartyWriteError::DuplicatePrimary(_) => "duplicate_primary",
@@ -80,6 +89,8 @@ impl std::fmt::Display for PartyWriteError {
             | PartyWriteError::DuplicateNik(v)
             | PartyWriteError::InvalidNpwp(v)
             | PartyWriteError::InvalidNik(v)
+            | PartyWriteError::InvalidVat(v)
+            | PartyWriteError::VatUnknownCountry(v)
             | PartyWriteError::InvalidEmail(v)
             | PartyWriteError::InconsistentKind(v) => write!(f, ": {v}"),
             PartyWriteError::DuplicatePrimary(kind) => write!(f, ": {kind}"),
@@ -115,6 +126,9 @@ pub struct NewParty {
     pub last_name: Option<String>,
     pub npwp: Option<String>,
     pub nik: Option<String>,
+    /// Cross-border VAT number. Validated fail-closed; '/' is the no-VAT sentinel.
+    /// Stored in canonical form (uppercased, separators stripped) or verbatim when '/'.
+    pub vat: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -171,11 +185,25 @@ pub struct NewPhone {
 #[derive(Clone)]
 pub struct PartyWriteService {
     db_pool: PgPool,
+    /// VAT validation posture. Default fail-closed for unknown countries; the named
+    /// escape is wired explicitly (see `VatValidationPolicy`).
+    vat_policy: crate::application::service::party_vat_validation::VatValidationPolicy,
 }
 
 impl PartyWriteService {
     pub fn new(db_pool: PgPool) -> Self {
-        Self { db_pool }
+        Self { db_pool, vat_policy: VatValidationPolicy::FAIL_CLOSED }
+    }
+
+    /// Explicit VAT validation posture for this service instance. Hosts wiring the named
+    /// escape pass `VatValidationPolicy::ALLOW_UNKNOWN_COUNTRIES` (or
+    /// `VatValidationPolicy::from_env()` to honor `PARTY_VAT_ALLOW_UNKNOWN_COUNTRIES`);
+    /// the module builder already applies `from_env()`.
+    pub fn with_vat_policy(
+        db_pool: PgPool,
+        vat_policy: crate::application::service::party_vat_validation::VatValidationPolicy,
+    ) -> Self {
+        Self { db_pool, vat_policy }
     }
 
     fn is_dup(e: &sqlx::Error, needle: &str) -> bool {
@@ -207,6 +235,22 @@ impl PartyWriteService {
                     return Err(PartyWriteError::InvalidNik(n.clone()));
                 }
             }
+            // VAT: fail-closed for unknown countries; '/' is the no-VAT sentinel; an empty
+            // value means "no value" (stored NULL). Unknown-country refusals carry a loud
+            // warn log from the validator plus a distinct error code so operators can tell
+            // the escape-able refusal from a malformed known-country number.
+            let vat: Option<String> = match p.vat.as_deref().map(str::trim) {
+                None | Some("") => None,
+                Some(raw) => match validate_vat_with(&self.vat_policy, raw) {
+                    Ok(canonical) => Some(canonical),
+                    Err(VatError::UnknownCountry(country)) => {
+                        return Err(PartyWriteError::VatUnknownCountry(country));
+                    }
+                    Err(e) => {
+                        return Err(PartyWriteError::InvalidVat(format!("{raw} ({e})")));
+                    }
+                },
+            };
             let kind = p.party_kind.clone().unwrap_or_else(|| "organization".to_string());
             // Kind/field coherence (council 2026-07-02): a person needs a name part; an organization
             // needs a legal_name and cannot carry a NIK (a person's national ID).
@@ -248,6 +292,7 @@ impl PartyWriteService {
                     last_name: p.last_name.as_deref(),
                     npwp: p.npwp.as_deref(),
                     nik: p.nik.as_deref(),
+                    vat: vat.as_deref(),
                 },
             ).await;
             match r {
