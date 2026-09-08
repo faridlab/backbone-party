@@ -183,6 +183,13 @@ impl PartyWriteService {
         Self { db_pool, vat_policy: VatValidationPolicy::FAIL_CLOSED }
     }
 
+    /// The pool this service was built with — the composing app's boot pool.
+    /// Handlers use it as the fallback for callers that carry no
+    /// tenant-dedicated pool on the request.
+    pub fn pool(&self) -> &PgPool {
+        &self.db_pool
+    }
+
     /// Explicit VAT validation posture for this service instance. Hosts wiring the named
     /// escape pass `VatValidationPolicy::ALLOW_UNKNOWN_COUNTRIES` (or
     /// `VatValidationPolicy::from_env()` to honor `PARTY_VAT_ALLOW_UNKNOWN_COUNTRIES`);
@@ -407,7 +414,13 @@ impl PartyWriteService {
     /// Dispatches on `kind` to the per-child repository's `clear_primary_for_party` +
     /// `set_primary_child` methods, killing the old `format!("UPDATE party.{table} …")` smell —
     /// each repo knows its own table at compile time.
-    pub async fn set_primary(&self, party_id: Uuid, kind: &str, child_id: Uuid) -> Result<(), PartyWriteError> {
+    pub async fn set_primary(
+        &self,
+        pool: &PgPool,
+        party_id: Uuid,
+        kind: &str,
+        child_id: Uuid,
+    ) -> Result<(), PartyWriteError> {
         // Validate kind BEFORE opening the tx so unknown kinds bail with no side effects.
         match kind {
             "address" | "contact" | "email" | "phone" => {}
@@ -416,7 +429,11 @@ impl PartyWriteService {
         if !self.party_exists(party_id).await? {
             return Err(PartyWriteError::PartyNotFound(party_id));
         }
-        let mut tx = self.db_pool.begin().await?;
+        // The caller names the pool this write belongs to: under a tenant
+        // router the handler passes the request's tenant-dedicated pool (the
+        // service's own pool is the composing app's boot pool — the wrong
+        // database for any other tenant). Unfenced deployments pass their own.
+        let mut tx = pool.begin().await?;
         // Propagate the ambient request scope, when one is bound, onto this
         // transaction: the repositories' execute_scoped helpers ride the
         // request-dedicated connection, but this pool transaction does not, and

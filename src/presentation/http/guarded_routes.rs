@@ -257,9 +257,15 @@ struct SetPrimaryBody {
 }
 async fn set_primary(
     State(svc): State<Arc<PartyWriteService>>,
+    req_pool: Option<axum::Extension<sqlx::PgPool>>,
     Json(b): Json<SetPrimaryBody>,
 ) -> axum::response::Response {
-    match svc.set_primary(b.party_id, &b.kind, b.child_id).await {
+    // A tenant router hands the request its tenant-dedicated pool; this write
+    // opens its own transaction, so it must transact on that pool, not the
+    // service's boot pool. Without one (unfenced deployment, module tests)
+    // fall back to the pool the service was built with.
+    let pool = req_pool.map(|axum::Extension(p)| p).unwrap_or_else(|| svc.pool().clone());
+    match svc.set_primary(&pool, b.party_id, &b.kind, b.child_id).await {
         Ok(()) => (StatusCode::OK, Json(IdResponse { id: b.child_id })).into_response(),
         Err(e) => err_response(e),
     }
