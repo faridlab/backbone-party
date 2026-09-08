@@ -27,9 +27,13 @@ user_owned:
   - "src/infrastructure/persistence/party_email_repository.rs"
   - "src/infrastructure/persistence/party_phone_repository.rs"
 
-  # Hand-authored migrations (the tenant-scope RLS, the shared-blank fence flip, the VAT column).
+  # Hand-authored migrations (the tenant-scope RLS, the shared-blank fence flip, the VAT column,
+  # and the guarded company-artifact strip — the strip's ordering guard is hand-authored logic,
+  # not schema-derived emission).
   - "migrations/20260901120000_add_party_vat.up.sql"
   - "migrations/20260901120000_add_party_vat.down.sql"
+  - "migrations/20260908120000_strip_tenancy.up.sql"
+  - "migrations/20260908120000_strip_tenancy.down.sql"
 
   # Behavior tests (the golden cases / oracle) + route-level probes + BDD features.
   - "tests/party_golden_cases.rs"

@@ -20,13 +20,6 @@ models:
         attributes: ["@required", "@foreign_key(Party.id)"]
         description: "Owning party"
 
-      # Tenant scope (ADR-0010 B1) — logical FK to organization.Company.id (NO hard SQL FK).
-      # Denormalized from Party for per-company RLS fencing on this table.
-      company_id:
-        type: uuid
-        attributes: ["@required", "@exclude_from_foreign_key_check"]
-        description: "Tenant scope # logical FK to organization.Company.id"
-
       label:
         type: string
         attributes: ["@default('mobile')", "@max(30)"]
@@ -54,10 +47,12 @@ models:
         description: "Owning party"
         inverse: phones
 
+    # Tenancy (ADR-0029): the module is tenant-agnostic — no tenant key, no per-unit unique.
+    # The one-primary-per-party rule below is DOMAIN, not posture: a party is one row (id is
+    # the PK) living in exactly one unit under any deployment, so the per-party unique needs
+    # no tenant column. Per-unit code/npwp/nik uniqueness on parties is posture — that stays
+    # with the composing service's tenancy decorator.
     indexes:
-      - type: index
-        fields: [company_id, party_id, is_primary]
-      # At most ONE primary per party (council 2026-07-02) — soft-delete aware, per-company (ADR-0010 B1).
       - type: unique
-        fields: [company_id, party_id]
+        fields: [party_id]
         where: "is_primary AND deleted_at IS NULL"
