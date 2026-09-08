@@ -1,7 +1,13 @@
 //! Golden-case tests for the party validated write path.
-//! Proves PartyWriteService enforces NPWP/NIK format+uniqueness and party existence,
+//! Proves PartyWriteService enforces NPWP/NIK format and party existence,
 //! and that an address links to backbone-geo by logical FK (opaque uuid, no cross-module join).
 //! Requires DATABASE_URL (defaults to local dev Postgres on :5433).
+//!
+//! Tenancy (ADR-0029): duplicate party_code/npwp/nik rejection is deliberately NOT proven
+//! here — per-unit uniqueness is deployment posture, installed by the composing service's
+//! tenancy decorator, so it holds only on a decorated database. The composing service's
+//! suite proves it. The module's one-primary-per-party child unique IS domain and is
+//! covered by the integrity probes.
 
 #![expect(clippy::expect_used, reason = "test harness: a panic here names the setup failure precisely")]
 use sqlx::PgPool;
@@ -33,7 +39,6 @@ fn nik() -> String {
 
 fn party(code: &str) -> NewParty {
     NewParty {
-        company_id: Uuid::nil(),
         party_code: code.to_string(),
         party_kind: Some("organization".into()),
         name: "PT Test".into(),
@@ -78,22 +83,6 @@ async fn rejects_invalid_npwp_and_nik() {
     assert!(matches!(svc.create_party(bad2).await.unwrap_err(), PartyWriteError::InvalidNik(_)));
 }
 
-// PGC-3: duplicate party_code and duplicate npwp rejected distinctly.
-#[tokio::test]
-async fn rejects_duplicate_code_and_npwp() {
-    let pool = pool().await;
-    let svc = PartyWriteService::new(pool.clone());
-    let code = uq("DUP");
-    svc.create_party(party(&code)).await.expect("first");
-    assert!(matches!(svc.create_party(party(&code)).await.unwrap_err(), PartyWriteError::DuplicateCode(_)));
-
-    let shared = npwp();
-    let mut a = party(&uq("NPA")); a.npwp = Some(shared.clone());
-    svc.create_party(a).await.expect("npwp a");
-    let mut b = party(&uq("NPB")); b.npwp = Some(shared);
-    assert!(matches!(svc.create_party(b).await.unwrap_err(), PartyWriteError::DuplicateNpwp(_)));
-}
-
 // PGC-4: a child (address/email/phone) requires an existing party.
 #[tokio::test]
 async fn children_require_existing_party() {
@@ -104,9 +93,9 @@ async fn children_require_existing_party() {
     addr.line1 = "Jl. Test 1".into();
     assert!(matches!(svc.add_address(addr).await.unwrap_err(), PartyWriteError::PartyNotFound(_)));
 
-    let e = NewEmail { company_id: Uuid::nil(), party_id: Uuid::new_v4(), label: None, email: "a@b.com".into(), is_primary: true };
+    let e = NewEmail { party_id: Uuid::new_v4(), label: None, email: "a@b.com".into(), is_primary: true };
     assert!(matches!(svc.add_email(e).await.unwrap_err(), PartyWriteError::PartyNotFound(_)));
-    let ph = NewPhone { company_id: Uuid::nil(), party_id: Uuid::new_v4(), label: None, phone: "0811".into(), is_primary: true };
+    let ph = NewPhone { party_id: Uuid::new_v4(), label: None, phone: "0811".into(), is_primary: true };
     assert!(matches!(svc.add_phone(ph).await.unwrap_err(), PartyWriteError::PartyNotFound(_)));
 }
 

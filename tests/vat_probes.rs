@@ -32,7 +32,6 @@ fn uq(p: &str) -> String {
 
 fn party_with_vat(code: &str, vat: &str) -> NewParty {
     NewParty {
-        company_id: Uuid::nil(),
         party_code: code.to_string(),
         party_kind: Some("organization".into()),
         name: "PT Test".into(),

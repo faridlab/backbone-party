@@ -25,7 +25,6 @@ impl TestDataGenerator for PartyContactTestData {
         json!({
             "id": Uuid::new_v4().to_string(),
             "party_id": Uuid::new_v4().to_string(),
-            "company_id": Uuid::new_v4().to_string(),
             "name": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "job_title": null,
             "department": null,
@@ -41,7 +40,6 @@ impl TestDataGenerator for PartyContactTestData {
         json!({
             "id": id,
             "party_id": Uuid::new_v4().to_string(),
-            "company_id": Uuid::new_v4().to_string(),
             "name": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "job_title": null,
             "department": null,

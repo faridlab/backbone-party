@@ -25,7 +25,6 @@ impl TestDataGenerator for PartyAddressTestData {
         json!({
             "id": Uuid::new_v4().to_string(),
             "party_id": Uuid::new_v4().to_string(),
-            "company_id": Uuid::new_v4().to_string(),
             "address_type": "billing",
             "label": null,
             "line1": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
@@ -51,7 +50,6 @@ impl TestDataGenerator for PartyAddressTestData {
         json!({
             "id": id,
             "party_id": Uuid::new_v4().to_string(),
-            "company_id": Uuid::new_v4().to_string(),
             "address_type": "billing",
             "label": null,
             "line1": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
