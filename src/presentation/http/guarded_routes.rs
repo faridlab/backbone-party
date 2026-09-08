@@ -8,7 +8,6 @@
 use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
-use backbone_auth::company::CompanyContext;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -37,17 +36,12 @@ fn err_response(e: PartyWriteError) -> axum::response::Response {
     (status, Json(ErrorBody { error: e.code(), message: e.to_string() })).into_response()
 }
 
-/// The caller's company, taken from the [`CompanyContext`] the `company_auth` middleware inserts.
-///
-/// Every write handler extracts this so the tenant comes from the signed token, never the body.
-/// This deliberately reads the extension, NOT `company_scope::current_company()`: the task-local
-/// is only set on the middleware's *fallback* path (`with_company_scope`); on the stronger
-/// `with_request_scope` path (app inserts its `PgPool` extension) the scope rides the dedicated
-/// connection and the task-local stays unset — `current_company()` returns `None` there and every
-/// write 401'd with `no_company_scope`. The extension is inserted on BOTH paths.
-///
-/// Extracting without the middleware mounted rejects with 401 (wiring error), matching the
-/// hard-stop posture of ADR-0010 B1: every party write is tenant-bound.
+/// Tenancy: none, by design (ADR-0029). The module carries no tenant key — request bodies never
+/// carried one and handlers no longer extract one. The COMPOSING service decides the posture:
+/// when it mounts these routes under an auth middleware that binds a row scope (e.g.
+/// `with_org_request_scope`), the database fence owns tenant isolation and every write lands in
+/// the caller's unit; a deployment that mounts them unfenced gets an unfenced module. That is
+/// the module being agnostic and reusable, not a security hole.
 
 // ── Party ───────────────────────────────────────────────────────────────────────
 #[derive(Debug, Deserialize)]
@@ -73,13 +67,10 @@ struct CreatePartyBody {
 
 async fn create_party(
     State(svc): State<Arc<PartyWriteService>>,
-    tenant: CompanyContext,
     Json(b): Json<CreatePartyBody>,
 ) -> axum::response::Response {
-    let company = tenant.company_id;
     match svc
         .create_party(NewParty {
-            company_id: company,
             party_code: b.party_code,
             party_kind: b.party_kind,
             name: b.name,
@@ -135,13 +126,10 @@ struct AddAddressBody {
 
 async fn add_address(
     State(svc): State<Arc<PartyWriteService>>,
-    tenant: CompanyContext,
     Json(b): Json<AddAddressBody>,
 ) -> axum::response::Response {
-    let company = tenant.company_id;
     match svc
         .add_address(NewAddress {
-            company_id: company,
             party_id: b.party_id,
             address_type: b.address_type,
             label: b.label,
@@ -185,13 +173,10 @@ struct AddContactBody {
 }
 async fn add_contact(
     State(svc): State<Arc<PartyWriteService>>,
-    tenant: CompanyContext,
     Json(b): Json<AddContactBody>,
 ) -> axum::response::Response {
-    let company = tenant.company_id;
     match svc
         .add_contact(NewContact {
-            company_id: company,
             party_id: b.party_id,
             name: b.name,
             job_title: b.job_title,
@@ -219,13 +204,10 @@ struct AddEmailBody {
 }
 async fn add_email(
     State(svc): State<Arc<PartyWriteService>>,
-    tenant: CompanyContext,
     Json(b): Json<AddEmailBody>,
 ) -> axum::response::Response {
-    let company = tenant.company_id;
     match svc
         .add_email(NewEmail {
-            company_id: company,
             party_id: b.party_id,
             label: b.label,
             email: b.email,
@@ -250,13 +232,10 @@ struct AddPhoneBody {
 }
 async fn add_phone(
     State(svc): State<Arc<PartyWriteService>>,
-    tenant: CompanyContext,
     Json(b): Json<AddPhoneBody>,
 ) -> axum::response::Response {
-    let company = tenant.company_id;
     match svc
         .add_phone(NewPhone {
-            company_id: company,
             party_id: b.party_id,
             label: b.label,
             phone: b.phone,
@@ -278,10 +257,9 @@ struct SetPrimaryBody {
 }
 async fn set_primary(
     State(svc): State<Arc<PartyWriteService>>,
-    tenant: CompanyContext,
     Json(b): Json<SetPrimaryBody>,
 ) -> axum::response::Response {
-    match svc.set_primary(tenant.company_id, b.party_id, &b.kind, b.child_id).await {
+    match svc.set_primary(b.party_id, &b.kind, b.child_id).await {
         Ok(()) => (StatusCode::OK, Json(IdResponse { id: b.child_id })).into_response(),
         Err(e) => err_response(e),
     }

@@ -39,7 +39,6 @@ impl PartyContactRepository {
 /// The exact row a validated-contact insert writes.
 pub struct NewPartyContactRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub party_id: Uuid,
     pub name: &'a str,
     pub job_title: Option<&'a str>,
@@ -51,22 +50,22 @@ pub struct NewPartyContactRow<'a> {
 
 /// Party-contact write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
 impl PartyContactRepository {
-    /// Insert a contact, scoped so the RLS WITH CHECK sees `app.company_id` (a raw
-    /// `.execute(pool)` lands on an unfenced pooled connection and a non-owner role is rejected).
+    /// Insert a contact. Rides the request-dedicated connection when the composing service bound
+    /// a scope — under a decorated deployment the fence's WITH CHECK governs the row; with no scope
+    /// bound this is a plain insert.
     pub async fn insert_from_new(
         &self,
         pool: &PgPool,
         r: &NewPartyContactRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        backbone_orm::company_scope::execute_scoped(
+        backbone_orm::org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO party.party_contacts
-                    (id, company_id, party_id, name, job_title, department, email, phone, is_primary)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"#,
+                    (id, party_id, name, job_title, department, email, phone, is_primary)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8)"#,
             )
             .bind(r.id)
-            .bind(r.company_id)
             .bind(r.party_id)
             .bind(r.name)
             .bind(r.job_title)
@@ -80,40 +79,36 @@ impl PartyContactRepository {
     }
 
     /// Clear `is_primary` on every contact row for `party_id` (including soft-deleted rows).
-    /// Runs on the caller's tx — the caller has already bound the company on `conn`.
+    /// Runs on the caller's tx.
     pub async fn clear_primary_for_party(
         &self,
         conn: &mut PgConnection,
         party_id: Uuid,
-        company_id: Uuid,
     ) -> Result<u64, sqlx::Error> {
         let r = sqlx::query(
             "UPDATE party.party_contacts SET is_primary = FALSE \
-             WHERE party_id = $1 AND company_id = $2",
+             WHERE party_id = $1",
         )
         .bind(party_id)
-        .bind(company_id)
         .execute(conn)
         .await?;
         Ok(r.rows_affected())
     }
 
-    /// Set `is_primary = TRUE` on a single contact. Runs on the caller's tx — the caller has
-    /// already bound the company on `conn`. Returns rows_affected (0 ⇒ no matching live row).
+    /// Set `is_primary = TRUE` on a single contact, excluding soft-deleted rows. Runs on the
+    /// caller's tx. Returns rows_affected (0 ⇒ no matching live row).
     pub async fn set_primary_child(
         &self,
         conn: &mut PgConnection,
         child_id: Uuid,
         party_id: Uuid,
-        company_id: Uuid,
     ) -> Result<u64, sqlx::Error> {
         let r = sqlx::query(
             "UPDATE party.party_contacts SET is_primary = TRUE \
-             WHERE id = $1 AND party_id = $2 AND company_id = $3 AND (metadata->>'deleted_at') IS NULL",
+             WHERE id = $1 AND party_id = $2 AND (metadata->>'deleted_at') IS NULL",
         )
         .bind(child_id)
         .bind(party_id)
-        .bind(company_id)
         .execute(conn)
         .await?;
         Ok(r.rows_affected())

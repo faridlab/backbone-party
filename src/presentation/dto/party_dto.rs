@@ -34,9 +34,6 @@ use crate::domain::entity::PartyStatus;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreatePartyDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(alias = "party_code")]
@@ -83,9 +80,6 @@ pub struct CreatePartyDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePartyDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(alias = "party_code")]
@@ -132,9 +126,6 @@ pub struct UpdatePartyDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchPartyDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "party_code")]
@@ -173,7 +164,7 @@ pub struct PatchPartyDto {
 impl PatchPartyDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.party_code.is_some() || self.party_kind.is_some() || self.name.is_some() || self.legal_name.is_some() || self.first_name.is_some() || self.last_name.is_some() || self.npwp.is_some() || self.nik.is_some() || self.vat.is_some() || self.status.is_some() || self.notes.is_some()
+        self.party_code.is_some() || self.party_kind.is_some() || self.name.is_some() || self.legal_name.is_some() || self.first_name.is_some() || self.last_name.is_some() || self.npwp.is_some() || self.nik.is_some() || self.vat.is_some() || self.status.is_some() || self.notes.is_some()
     }
 }
 
@@ -191,8 +182,6 @@ impl PatchPartyDto {
 pub struct PartyResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub party_code: String,
     pub party_kind: PartyKind,
@@ -263,9 +252,9 @@ impl PartyListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct PartySummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub party_code: String,
     pub party_kind: PartyKind,
+    pub name: String,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -277,7 +266,6 @@ impl From<Party> for PartyResponseDto {
     fn from(entity: Party) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             party_code: entity.party_code,
             party_kind: entity.party_kind,
             name: entity.name,
@@ -299,9 +287,9 @@ impl From<Party> for PartySummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             party_code: entity.party_code,
             party_kind: entity.party_kind,
+            name: entity.name,
             created_at,
         }
     }
@@ -311,7 +299,6 @@ impl From<CreatePartyDto> for Party {
     fn from(dto: CreatePartyDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             party_code: dto.party_code,
             party_kind: dto.party_kind,
             name: dto.name,
@@ -332,7 +319,6 @@ impl From<&Party> for PartyResponseDto {
     fn from(entity: &Party) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             party_code: entity.party_code.clone(),
             party_kind: entity.party_kind.clone(),
             name: entity.name.clone(),
@@ -357,7 +343,6 @@ impl backbone_core::FromCreateDto<CreatePartyDto> for Party {
 
 impl backbone_core::ApplyUpdateDto<UpdatePartyDto> for Party {
     fn apply_update(mut self, dto: UpdatePartyDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.party_code = dto.party_code;
         self.party_kind = dto.party_kind;
         self.name = dto.name;

@@ -48,10 +48,6 @@ pub use application::service::party_vat_validation::{
     ALLOW_UNKNOWN_COUNTRIES_ENV, NO_VAT_SENTINEL,
 };
 pub use presentation::http::create_guarded_party_routes;
-// Route-level tests bind the request company scope the way the composing service's auth
-// middleware does in production (ADR-0008) — re-exported for the probe suite (tests/
-// crates can only see the lib's public surface, not its private dependencies).
-pub use backbone_orm::company_scope;
 // END CUSTOM
 use std::sync::Arc;
 use axum::Router;

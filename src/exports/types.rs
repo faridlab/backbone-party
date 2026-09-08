@@ -49,7 +49,6 @@ impl From<PartyId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PartyDto {
     pub id: PartyId,
-    pub company_id: Uuid,
     pub party_code: String,
     pub party_kind: PartyKind,
     pub name: String,
@@ -120,7 +119,6 @@ impl From<PartyAddressId> for Uuid {
 pub struct PartyAddressDto {
     pub id: PartyAddressId,
     pub party_id: Uuid,
-    pub company_id: Uuid,
     pub address_type: AddressType,
     pub label: Option<String>,
     pub line1: String,
@@ -192,7 +190,6 @@ impl From<PartyContactId> for Uuid {
 pub struct PartyContactDto {
     pub id: PartyContactId,
     pub party_id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
     pub job_title: Option<String>,
     pub department: Option<String>,
@@ -255,7 +252,6 @@ impl From<PartyEmailId> for Uuid {
 pub struct PartyEmailDto {
     pub id: PartyEmailId,
     pub party_id: Uuid,
-    pub company_id: Uuid,
     pub label: String,
     pub email: String,
     pub is_primary: bool,
@@ -314,7 +310,6 @@ impl From<PartyPhoneId> for Uuid {
 pub struct PartyPhoneDto {
     pub id: PartyPhoneId,
     pub party_id: Uuid,
-    pub company_id: Uuid,
     pub label: String,
     pub phone: String,
     pub is_primary: bool,

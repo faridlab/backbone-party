@@ -5,6 +5,10 @@
 //! below hold the validated write path's address SQL (4-layer rule: services orchestrate, repos
 //! hold SQL).
 //!
+//! Tenancy (ADR-0029): the SQL here carries no tenant key. The scoped-execute helper rides the
+//! request-dedicated connection when the composing service bound one (its fence variables govern
+//! what the RLS layer accepts) and falls back to a plain pool execute otherwise.
+//!
 //! Thin newtype over `backbone_orm::GenericCrudRepository<PartyAddress, backbone_orm::SoftDelete>`.
 //! All standard CRUD methods are available via `Deref`.
 
@@ -40,7 +44,6 @@ impl PartyAddressRepository {
 /// The exact row a validated-address insert writes.
 pub struct NewPartyAddressRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub party_id: Uuid,
     pub address_type: &'a str,
     pub label: Option<&'a str>,
@@ -61,24 +64,24 @@ pub struct NewPartyAddressRow<'a> {
 
 /// Party-address write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
 impl PartyAddressRepository {
-    /// Insert an address, scoped so the RLS WITH CHECK sees `app.company_id` (a raw
-    /// `.execute(pool)` lands on an unfenced pooled connection and a non-owner role is rejected).
+    /// Insert an address. Rides the request-dedicated connection when the composing service bound
+    /// a scope — under a decorated deployment the fence's WITH CHECK governs the row; with no scope
+    /// bound this is a plain insert.
     pub async fn insert_from_new(
         &self,
         pool: &PgPool,
         r: &NewPartyAddressRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        backbone_orm::company_scope::execute_scoped(
+        backbone_orm::org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO party.party_addresses
-                    (id, company_id, party_id, address_type, label, line1, line2, country_id, province_id,
+                    (id, party_id, address_type, label, line1, line2, country_id, province_id,
                      city_id, district_id, subdistrict_id, postal_code, latitude, longitude, is_primary,
                      is_billing, is_shipping, status)
-                   VALUES ($1,$2,$3,$4::address_type,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'active'::party_status)"#,
+                   VALUES ($1,$2,$3::address_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'active'::party_status)"#,
             )
             .bind(r.id)
-            .bind(r.company_id)
             .bind(r.party_id)
             .bind(r.address_type)
             .bind(r.label)
@@ -101,42 +104,37 @@ impl PartyAddressRepository {
     }
 
     /// Clear `is_primary` on every address row for `party_id` (including soft-deleted rows, so a
-    /// revival can never re-enter with two primaries). Runs on the caller's tx — the caller has
-    /// already bound the company on `conn`.
+    /// revival can never re-enter with two primaries). Runs on the caller's tx.
     pub async fn clear_primary_for_party(
         &self,
         conn: &mut PgConnection,
         party_id: Uuid,
-        company_id: Uuid,
     ) -> Result<u64, sqlx::Error> {
         let r = sqlx::query(
             "UPDATE party.party_addresses SET is_primary = FALSE \
-             WHERE party_id = $1 AND company_id = $2",
+             WHERE party_id = $1",
         )
         .bind(party_id)
-        .bind(company_id)
         .execute(conn)
         .await?;
         Ok(r.rows_affected())
     }
 
-    /// Set `is_primary = TRUE` on a single address, scoped to (id, party_id, company_id) and
-    /// excluding soft-deleted rows. Runs on the caller's tx — the caller has already bound the
-    /// company on `conn`. Returns rows_affected (0 ⇒ no matching live row).
+    /// Set `is_primary = TRUE` on a single address, scoped to (id, party_id) and excluding
+    /// soft-deleted rows. Runs on the caller's tx. Returns rows_affected (0 ⇒ no matching live
+    /// row).
     pub async fn set_primary_child(
         &self,
         conn: &mut PgConnection,
         child_id: Uuid,
         party_id: Uuid,
-        company_id: Uuid,
     ) -> Result<u64, sqlx::Error> {
         let r = sqlx::query(
             "UPDATE party.party_addresses SET is_primary = TRUE \
-             WHERE id = $1 AND party_id = $2 AND company_id = $3 AND (metadata->>'deleted_at') IS NULL",
+             WHERE id = $1 AND party_id = $2 AND (metadata->>'deleted_at') IS NULL",
         )
         .bind(child_id)
         .bind(party_id)
-        .bind(company_id)
         .execute(conn)
         .await?;
         Ok(r.rows_affected())

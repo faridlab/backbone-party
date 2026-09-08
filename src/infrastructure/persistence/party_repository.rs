@@ -5,6 +5,10 @@
 //! below hold the validated write path's party SQL (4-layer rule: services orchestrate, repos hold
 //! SQL).
 //!
+//! Tenancy (ADR-0029): the SQL here carries no tenant key. The scoped-execute helpers ride the
+//! request-dedicated connection when the composing service bound one (its fence variables govern
+//! what the RLS layer accepts) and fall back to a plain pool execute otherwise.
+//!
 //! Thin newtype over `backbone_orm::GenericCrudRepository<Party, backbone_orm::SoftDelete>`.
 //! All standard CRUD methods are available via `Deref`.
 
@@ -39,7 +43,6 @@ impl PartyRepository {
 /// The exact row a validated-party insert writes.
 pub struct NewPartyRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub party_code: &'a str,
     pub party_kind: &'a str,
     pub name: &'a str,
@@ -54,48 +57,44 @@ pub struct NewPartyRow<'a> {
 
 /// Party write-path SQL. Lives here (not in the service) per the module's 4-layer rule.
 impl PartyRepository {
-    /// Existence probe filtered by the caller's company. Runs through the scoped-execute helper so
-    /// it rides the request-dedicated connection (or the task-local scope) — a raw `fetch_optional`
-    /// lands on an unfenced pooled connection and the ADR-0008 fence returns nothing, even though
-    /// the explicit `company_id=$2` filter matches. Soft-deleted rows are excluded.
-    pub async fn find_active_id_in_company(
+    /// Existence probe. Runs through the scoped-execute helper so it rides the request-dedicated
+    /// connection when the composing service bound one — a raw `fetch_optional` lands on a fresh
+    /// pooled connection where no fence variables are set, and a row fence returns nothing even
+    /// though the explicit `id = $1` filter matches. Soft-deleted rows are excluded.
+    pub async fn find_active_id(
         &self,
         pool: &PgPool,
         id: Uuid,
-        company_id: Uuid,
     ) -> Result<Option<Uuid>, sqlx::Error> {
-        let row = backbone_orm::company_scope::fetch_optional_row_scoped(
+        let row = backbone_orm::org_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
                 "SELECT id FROM party.parties \
-                 WHERE id = $1 AND company_id = $2 AND (metadata->>'deleted_at') IS NULL",
+                 WHERE id = $1 AND (metadata->>'deleted_at') IS NULL",
             )
-            .bind(id)
-            .bind(company_id),
+            .bind(id),
         )
         .await?;
         Ok(row.map(|r| r.get::<Uuid, _>("id")))
     }
 
-    /// Insert a party, scoped so the RLS WITH CHECK sees `app.company_id`. A raw `.execute(pool)`
-    /// runs on an unfenced pooled connection — under a non-owner role the shared_blank fence
-    /// REJECTS the insert (silent 500 to the caller); the scoped helper rides the request
-    /// connection (strong scope) or binds transaction-locally (task-local scope).
+    /// Insert a party. Rides the request-dedicated connection when the composing service bound a
+    /// scope — under a decorated deployment the fence's WITH CHECK governs the row; with no scope
+    /// bound this is a plain insert.
     pub async fn insert_from_new(
         &self,
         pool: &PgPool,
         r: &NewPartyRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        backbone_orm::company_scope::execute_scoped(
+        backbone_orm::org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO party.parties
-                    (id, company_id, party_code, party_kind, name, legal_name, first_name, last_name,
+                    (id, party_code, party_kind, name, legal_name, first_name, last_name,
                      npwp, nik, vat, status)
-                   VALUES ($1,$2,$3,$4::party_kind,$5,$6,$7,$8,$9,$10,$11,'active'::party_status)"#,
+                   VALUES ($1,$2,$3::party_kind,$4,$5,$6,$7,$8,$9,$10,'active'::party_status)"#,
             )
             .bind(r.id)
-            .bind(r.company_id)
             .bind(r.party_code)
             .bind(r.party_kind)
             .bind(r.name)

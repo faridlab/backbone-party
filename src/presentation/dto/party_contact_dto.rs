@@ -35,9 +35,6 @@ pub struct CreatePartyContactDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "party_id")]
     pub party_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -74,9 +71,6 @@ pub struct UpdatePartyContactDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "party_id")]
     pub party_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -113,9 +107,6 @@ pub struct PatchPartyContactDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "party_id")]
     pub party_id: Option<Uuid>,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 150)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -140,7 +131,7 @@ pub struct PatchPartyContactDto {
 impl PatchPartyContactDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.party_id.is_some() || self.company_id.is_some() || self.name.is_some() || self.job_title.is_some() || self.department.is_some() || self.email.is_some() || self.phone.is_some() || self.is_primary.is_some()
+        self.party_id.is_some() || self.name.is_some() || self.job_title.is_some() || self.department.is_some() || self.email.is_some() || self.phone.is_some() || self.is_primary.is_some()
     }
 }
 
@@ -160,8 +151,6 @@ pub struct PartyContactResponseDto {
     pub id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub party_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     pub job_title: Option<String>,
@@ -228,8 +217,8 @@ impl PartyContactListResponseDto {
 pub struct PartyContactSummaryDto {
     pub id: Uuid,
     pub party_id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
+    pub job_title: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -242,7 +231,6 @@ impl From<PartyContact> for PartyContactResponseDto {
         Self {
             id: entity.id,
             party_id: entity.party_id,
-            company_id: entity.company_id,
             name: entity.name,
             job_title: entity.job_title,
             department: entity.department,
@@ -260,8 +248,8 @@ impl From<PartyContact> for PartyContactSummaryDto {
         Self {
             id: entity.id,
             party_id: entity.party_id,
-            company_id: entity.company_id,
             name: entity.name,
+            job_title: entity.job_title,
             created_at,
         }
     }
@@ -272,7 +260,6 @@ impl From<CreatePartyContactDto> for PartyContact {
         Self {
             id: Uuid::new_v4(),
             party_id: dto.party_id,
-            company_id: dto.company_id,
             name: dto.name,
             job_title: dto.job_title,
             department: dto.department,
@@ -289,7 +276,6 @@ impl From<&PartyContact> for PartyContactResponseDto {
         Self {
             id: entity.id.clone(),
             party_id: entity.party_id.clone(),
-            company_id: entity.company_id.clone(),
             name: entity.name.clone(),
             job_title: entity.job_title.clone(),
             department: entity.department.clone(),
@@ -310,7 +296,6 @@ impl backbone_core::FromCreateDto<CreatePartyContactDto> for PartyContact {
 impl backbone_core::ApplyUpdateDto<UpdatePartyContactDto> for PartyContact {
     fn apply_update(mut self, dto: UpdatePartyContactDto) -> backbone_core::ServiceResult<Self> {
         self.party_id = dto.party_id;
-        self.company_id = dto.company_id;
         self.name = dto.name;
         self.job_title = dto.job_title;
         self.department = dto.department;

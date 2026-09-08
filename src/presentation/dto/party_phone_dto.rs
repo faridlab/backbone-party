@@ -35,9 +35,6 @@ pub struct CreatePartyPhoneDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "party_id")]
     pub party_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub label: String,
@@ -65,9 +62,6 @@ pub struct UpdatePartyPhoneDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "party_id")]
     pub party_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub label: String,
@@ -95,9 +89,6 @@ pub struct PatchPartyPhoneDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "party_id")]
     pub party_id: Option<Uuid>,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(length(max = 30)))]
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -114,7 +105,7 @@ pub struct PatchPartyPhoneDto {
 impl PatchPartyPhoneDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.party_id.is_some() || self.company_id.is_some() || self.label.is_some() || self.phone.is_some() || self.is_primary.is_some()
+        self.party_id.is_some() || self.label.is_some() || self.phone.is_some() || self.is_primary.is_some()
     }
 }
 
@@ -134,8 +125,6 @@ pub struct PartyPhoneResponseDto {
     pub id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub party_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub label: String,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -200,8 +189,8 @@ impl PartyPhoneListResponseDto {
 pub struct PartyPhoneSummaryDto {
     pub id: Uuid,
     pub party_id: Uuid,
-    pub company_id: Uuid,
     pub label: String,
+    pub phone: String,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -214,7 +203,6 @@ impl From<PartyPhone> for PartyPhoneResponseDto {
         Self {
             id: entity.id,
             party_id: entity.party_id,
-            company_id: entity.company_id,
             label: entity.label,
             phone: entity.phone,
             is_primary: entity.is_primary,
@@ -229,8 +217,8 @@ impl From<PartyPhone> for PartyPhoneSummaryDto {
         Self {
             id: entity.id,
             party_id: entity.party_id,
-            company_id: entity.company_id,
             label: entity.label,
+            phone: entity.phone,
             created_at,
         }
     }
@@ -241,7 +229,6 @@ impl From<CreatePartyPhoneDto> for PartyPhone {
         Self {
             id: Uuid::new_v4(),
             party_id: dto.party_id,
-            company_id: dto.company_id,
             label: dto.label,
             phone: dto.phone,
             is_primary: dto.is_primary,
@@ -255,7 +242,6 @@ impl From<&PartyPhone> for PartyPhoneResponseDto {
         Self {
             id: entity.id.clone(),
             party_id: entity.party_id.clone(),
-            company_id: entity.company_id.clone(),
             label: entity.label.clone(),
             phone: entity.phone.clone(),
             is_primary: entity.is_primary.clone(),
@@ -273,7 +259,6 @@ impl backbone_core::FromCreateDto<CreatePartyPhoneDto> for PartyPhone {
 impl backbone_core::ApplyUpdateDto<UpdatePartyPhoneDto> for PartyPhone {
     fn apply_update(mut self, dto: UpdatePartyPhoneDto) -> backbone_core::ServiceResult<Self> {
         self.party_id = dto.party_id;
-        self.company_id = dto.company_id;
         self.label = dto.label;
         self.phone = dto.phone;
         self.is_primary = dto.is_primary;
