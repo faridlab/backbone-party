@@ -417,6 +417,16 @@ impl PartyWriteService {
             return Err(PartyWriteError::PartyNotFound(party_id));
         }
         let mut tx = self.db_pool.begin().await?;
+        // Propagate the ambient request scope, when one is bound, onto this
+        // transaction: the repositories' execute_scoped helpers ride the
+        // request-dedicated connection, but this pool transaction does not, and
+        // rows a deployment's fence decorates are invisible to an unscoped
+        // connection. Binding the ambient scope relay-only keeps the module
+        // posture-agnostic — unfenced deployments have no ambient scope and
+        // skip this entirely.
+        if let Some(scope) = backbone_orm::org_scope::current_org_scope() {
+            backbone_orm::org_scope::bind_org_scope_on(&mut *tx, &scope).await?;
+        }
         // Clear first (so the partial-unique index never sees two primaries mid-transaction).
         // Dispatch to the per-child repo so the table name is a compile-time constant, not a
         // string-built identifier.
