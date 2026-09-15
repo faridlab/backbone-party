@@ -7,7 +7,7 @@ info:
     This API provides 11 standard CRUD endpoints for each model.
 
 servers:
-  - url: http://localhost:3000
+  - url: /
     description: Development server
 
 tags:
@@ -23,7 +23,7 @@ tags:
     description: PartyPhone management endpoints
 
 paths:
-  /api/v1/parties:
+  /api/v1/party/parties:
     get:
       tags:
         - Parties
@@ -69,7 +69,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/parties/{id}:
+  /api/v1/party/parties/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -141,7 +141,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/parties/bulk:
+  /api/v1/party/parties/bulk:
     post:
       tags:
         - Parties
@@ -233,7 +233,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/parties/upsert:
+  /api/v1/party/parties/upsert:
     post:
       tags:
         - Parties
@@ -263,7 +263,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Party'
 
-  /api/v1/parties/trash:
+  /api/v1/party/parties/trash:
     get:
       tags:
         - Parties
@@ -280,7 +280,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyList'
 
-  /api/v1/parties/{id}/restore:
+  /api/v1/party/parties/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -298,7 +298,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/parties/empty:
+  /api/v1/party/parties/empty:
     delete:
       tags:
         - Parties
@@ -315,7 +315,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/parties/delete/bulk:
+  /api/v1/party/parties/delete/bulk:
     post:
       tags:
         - Parties
@@ -335,7 +335,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/parties/restore/bulk:
+  /api/v1/party/parties/restore/bulk:
     post:
       tags:
         - Parties
@@ -353,7 +353,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/parties/restore/all:
+  /api/v1/party/parties/restore/all:
     post:
       tags:
         - Parties
@@ -369,7 +369,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/parties/trash/bulk:
+  /api/v1/party/parties/trash/bulk:
     delete:
       tags:
         - Parties
@@ -389,7 +389,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_addresses:
+  /api/v1/party/party_addresses:
     get:
       tags:
         - PartyAddresses
@@ -435,7 +435,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/party_addresses/{id}:
+  /api/v1/party/party_addresses/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -507,7 +507,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_addresses/bulk:
+  /api/v1/party/party_addresses/bulk:
     post:
       tags:
         - PartyAddresses
@@ -599,7 +599,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_addresses/upsert:
+  /api/v1/party/party_addresses/upsert:
     post:
       tags:
         - PartyAddresses
@@ -629,7 +629,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyAddress'
 
-  /api/v1/party_addresses/trash:
+  /api/v1/party/party_addresses/trash:
     get:
       tags:
         - PartyAddresses
@@ -646,7 +646,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyAddressList'
 
-  /api/v1/party_addresses/{id}/restore:
+  /api/v1/party/party_addresses/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -664,7 +664,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_addresses/empty:
+  /api/v1/party/party_addresses/empty:
     delete:
       tags:
         - PartyAddresses
@@ -681,7 +681,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/party_addresses/delete/bulk:
+  /api/v1/party/party_addresses/delete/bulk:
     post:
       tags:
         - PartyAddresses
@@ -701,7 +701,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_addresses/restore/bulk:
+  /api/v1/party/party_addresses/restore/bulk:
     post:
       tags:
         - PartyAddresses
@@ -719,7 +719,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_addresses/restore/all:
+  /api/v1/party/party_addresses/restore/all:
     post:
       tags:
         - PartyAddresses
@@ -735,7 +735,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/party_addresses/trash/bulk:
+  /api/v1/party/party_addresses/trash/bulk:
     delete:
       tags:
         - PartyAddresses
@@ -755,7 +755,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_contacts:
+  /api/v1/party/party_contacts:
     get:
       tags:
         - PartyContacts
@@ -801,7 +801,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/party_contacts/{id}:
+  /api/v1/party/party_contacts/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -873,7 +873,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_contacts/bulk:
+  /api/v1/party/party_contacts/bulk:
     post:
       tags:
         - PartyContacts
@@ -965,7 +965,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_contacts/upsert:
+  /api/v1/party/party_contacts/upsert:
     post:
       tags:
         - PartyContacts
@@ -995,7 +995,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyContact'
 
-  /api/v1/party_contacts/trash:
+  /api/v1/party/party_contacts/trash:
     get:
       tags:
         - PartyContacts
@@ -1012,7 +1012,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyContactList'
 
-  /api/v1/party_contacts/{id}/restore:
+  /api/v1/party/party_contacts/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -1030,7 +1030,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_contacts/empty:
+  /api/v1/party/party_contacts/empty:
     delete:
       tags:
         - PartyContacts
@@ -1047,7 +1047,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/party_contacts/delete/bulk:
+  /api/v1/party/party_contacts/delete/bulk:
     post:
       tags:
         - PartyContacts
@@ -1067,7 +1067,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_contacts/restore/bulk:
+  /api/v1/party/party_contacts/restore/bulk:
     post:
       tags:
         - PartyContacts
@@ -1085,7 +1085,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_contacts/restore/all:
+  /api/v1/party/party_contacts/restore/all:
     post:
       tags:
         - PartyContacts
@@ -1101,7 +1101,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/party_contacts/trash/bulk:
+  /api/v1/party/party_contacts/trash/bulk:
     delete:
       tags:
         - PartyContacts
@@ -1121,7 +1121,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_emails:
+  /api/v1/party/party_emails:
     get:
       tags:
         - PartyEmails
@@ -1167,7 +1167,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/party_emails/{id}:
+  /api/v1/party/party_emails/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -1239,7 +1239,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_emails/bulk:
+  /api/v1/party/party_emails/bulk:
     post:
       tags:
         - PartyEmails
@@ -1331,7 +1331,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_emails/upsert:
+  /api/v1/party/party_emails/upsert:
     post:
       tags:
         - PartyEmails
@@ -1361,7 +1361,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyEmail'
 
-  /api/v1/party_emails/trash:
+  /api/v1/party/party_emails/trash:
     get:
       tags:
         - PartyEmails
@@ -1378,7 +1378,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyEmailList'
 
-  /api/v1/party_emails/{id}/restore:
+  /api/v1/party/party_emails/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -1396,7 +1396,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_emails/empty:
+  /api/v1/party/party_emails/empty:
     delete:
       tags:
         - PartyEmails
@@ -1413,7 +1413,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/party_emails/delete/bulk:
+  /api/v1/party/party_emails/delete/bulk:
     post:
       tags:
         - PartyEmails
@@ -1433,7 +1433,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_emails/restore/bulk:
+  /api/v1/party/party_emails/restore/bulk:
     post:
       tags:
         - PartyEmails
@@ -1451,7 +1451,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_emails/restore/all:
+  /api/v1/party/party_emails/restore/all:
     post:
       tags:
         - PartyEmails
@@ -1467,7 +1467,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/party_emails/trash/bulk:
+  /api/v1/party/party_emails/trash/bulk:
     delete:
       tags:
         - PartyEmails
@@ -1487,7 +1487,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_phones:
+  /api/v1/party/party_phones:
     get:
       tags:
         - PartyPhones
@@ -1533,7 +1533,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/party_phones/{id}:
+  /api/v1/party/party_phones/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -1605,7 +1605,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_phones/bulk:
+  /api/v1/party/party_phones/bulk:
     post:
       tags:
         - PartyPhones
@@ -1697,7 +1697,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_phones/upsert:
+  /api/v1/party/party_phones/upsert:
     post:
       tags:
         - PartyPhones
@@ -1727,7 +1727,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyPhone'
 
-  /api/v1/party_phones/trash:
+  /api/v1/party/party_phones/trash:
     get:
       tags:
         - PartyPhones
@@ -1744,7 +1744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PartyPhoneList'
 
-  /api/v1/party_phones/{id}/restore:
+  /api/v1/party/party_phones/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -1762,7 +1762,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/party_phones/empty:
+  /api/v1/party/party_phones/empty:
     delete:
       tags:
         - PartyPhones
@@ -1779,7 +1779,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/party_phones/delete/bulk:
+  /api/v1/party/party_phones/delete/bulk:
     post:
       tags:
         - PartyPhones
@@ -1799,7 +1799,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_phones/restore/bulk:
+  /api/v1/party/party_phones/restore/bulk:
     post:
       tags:
         - PartyPhones
@@ -1817,7 +1817,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/party_phones/restore/all:
+  /api/v1/party/party_phones/restore/all:
     post:
       tags:
         - PartyPhones
@@ -1833,7 +1833,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/party_phones/trash/bulk:
+  /api/v1/party/party_phones/trash/bulk:
     delete:
       tags:
         - PartyPhones
