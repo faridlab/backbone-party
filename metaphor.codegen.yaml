@@ -21,6 +21,8 @@ user_owned:
   # no-VAT sentinel, named unknown-country escape).
   - "src/application/service/party_vat_validation.rs"
   - "src/presentation/http/guarded_routes.rs"
+  # The composer-installed request-pool shim the write service resolves its database through (ADR-0029 pool law): hand-written, never schema-derived.
+  - "src/request_pool.rs"
   # Own the hand-written party SQL (the validated write path's existence probe, the
   # party + child inserts, and the per-child primary switch) that party_write_service orchestrates.
   # Declared here — not renamed with a `_custom` suffix — so the generator skips them wholesale;

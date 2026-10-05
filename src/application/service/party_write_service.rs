@@ -183,9 +183,16 @@ impl PartyWriteService {
         Self { db_pool, vat_policy: VatValidationPolicy::FAIL_CLOSED }
     }
 
+    /// The database this call runs on: the composer's request pool when one
+    /// is bound (a tenant mount, or a relay consumer wrapped by the host),
+    /// else the composed pool (ADR-0029 pool law).
+    pub(crate) fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.db_pool.clone())
+    }
+
     /// The pool this service was built with — the composing app's boot pool.
-    /// Handlers use it as the fallback for callers that carry no
-    /// tenant-dedicated pool on the request.
+    /// Exposed for hosts that want the boot pool explicitly; the verbs
+    /// themselves resolve their database per call through [`Self::rpool`].
     pub fn pool(&self) -> &PgPool {
         &self.db_pool
     }
@@ -213,8 +220,8 @@ impl PartyWriteService {
     /// Existence check. Under a composing service's row fence (RLS), the scope bound on the
     /// request connection limits what is visible; with no fence mounted, this is a plain lookup.
     async fn party_exists(&self, id: Uuid) -> Result<bool, PartyWriteError> {
-        let parties = PartyRepository::new(self.db_pool.clone());
-        Ok(parties.find_active_id(&self.db_pool, id).await?.is_some())
+        let parties = PartyRepository::new(self.rpool());
+        Ok(parties.find_active_id(&self.rpool(), id).await?.is_some())
     }
 
     pub async fn create_party(&self, p: NewParty) -> Result<Uuid, PartyWriteError> {
@@ -271,9 +278,9 @@ impl PartyWriteService {
             _ => {}
         }
         let id = Uuid::new_v4();
-        let parties = PartyRepository::new(self.db_pool.clone());
+        let parties = PartyRepository::new(self.rpool());
         let r = parties.insert_from_new(
-            &self.db_pool,
+            &self.rpool(),
             &NewPartyRow {
                 id,
                 party_code: &p.party_code,
@@ -304,9 +311,9 @@ impl PartyWriteService {
         }
         let id = Uuid::new_v4();
         let atype = a.address_type.clone().unwrap_or_else(|| "home".to_string());
-        let addresses = PartyAddressRepository::new(self.db_pool.clone());
+        let addresses = PartyAddressRepository::new(self.rpool());
         let r = addresses.insert_from_new(
-            &self.db_pool,
+            &self.rpool(),
             &NewPartyAddressRow {
                 id,
                 party_id: a.party_id,
@@ -335,9 +342,9 @@ impl PartyWriteService {
             return Err(PartyWriteError::PartyNotFound(c.party_id));
         }
         let id = Uuid::new_v4();
-        let contacts = PartyContactRepository::new(self.db_pool.clone());
+        let contacts = PartyContactRepository::new(self.rpool());
         let r = contacts.insert_from_new(
-            &self.db_pool,
+            &self.rpool(),
             &NewPartyContactRow {
                 id,
                 party_id: c.party_id,
@@ -361,9 +368,9 @@ impl PartyWriteService {
         }
         let id = Uuid::new_v4();
         let label = e.label.clone().unwrap_or_else(|| "main".to_string());
-        let emails = PartyEmailRepository::new(self.db_pool.clone());
+        let emails = PartyEmailRepository::new(self.rpool());
         let r = emails.insert_from_new(
-            &self.db_pool,
+            &self.rpool(),
             &NewPartyEmailRow {
                 id,
                 party_id: e.party_id,
@@ -381,9 +388,9 @@ impl PartyWriteService {
         }
         let id = Uuid::new_v4();
         let label = p.label.clone().unwrap_or_else(|| "mobile".to_string());
-        let phones = PartyPhoneRepository::new(self.db_pool.clone());
+        let phones = PartyPhoneRepository::new(self.rpool());
         let r = phones.insert_from_new(
-            &self.db_pool,
+            &self.rpool(),
             &NewPartyPhoneRow {
                 id,
                 party_id: p.party_id,
@@ -449,22 +456,22 @@ impl PartyWriteService {
         // string-built identifier.
         let n = match kind {
             "address" => {
-                let repo = PartyAddressRepository::new(self.db_pool.clone());
+                let repo = PartyAddressRepository::new(self.rpool());
                 repo.clear_primary_for_party(&mut *tx, party_id).await?;
                 repo.set_primary_child(&mut *tx, child_id, party_id).await?
             }
             "contact" => {
-                let repo = PartyContactRepository::new(self.db_pool.clone());
+                let repo = PartyContactRepository::new(self.rpool());
                 repo.clear_primary_for_party(&mut *tx, party_id).await?;
                 repo.set_primary_child(&mut *tx, child_id, party_id).await?
             }
             "email" => {
-                let repo = PartyEmailRepository::new(self.db_pool.clone());
+                let repo = PartyEmailRepository::new(self.rpool());
                 repo.clear_primary_for_party(&mut *tx, party_id).await?;
                 repo.set_primary_child(&mut *tx, child_id, party_id).await?
             }
             "phone" => {
-                let repo = PartyPhoneRepository::new(self.db_pool.clone());
+                let repo = PartyPhoneRepository::new(self.rpool());
                 repo.clear_primary_for_party(&mut *tx, party_id).await?;
                 repo.set_primary_child(&mut *tx, child_id, party_id).await?
             }

@@ -257,15 +257,12 @@ struct SetPrimaryBody {
 }
 async fn set_primary(
     State(svc): State<Arc<PartyWriteService>>,
-    req_pool: Option<axum::Extension<sqlx::PgPool>>,
     Json(b): Json<SetPrimaryBody>,
 ) -> axum::response::Response {
-    // A tenant router hands the request its tenant-dedicated pool; this write
-    // opens its own transaction, so it must transact on that pool, not the
-    // service's boot pool. Without one (unfenced deployment, module tests)
-    // fall back to the pool the service was built with.
-    let pool = req_pool.map(|axum::Extension(p)| p).unwrap_or_else(|| svc.pool().clone());
-    match svc.set_primary(&pool, b.party_id, &b.kind, b.child_id).await {
+    // The request-pool middleware on the composer binds the tenant-dedicated
+    // pool a tenant router inserted; rpool() resolves it, with the service's
+    // boot pool as the fallback (unfenced deployments, module tests).
+    match svc.set_primary(&svc.rpool(), b.party_id, &b.kind, b.child_id).await {
         Ok(()) => (StatusCode::OK, Json(IdResponse { id: b.child_id })).into_response(),
         Err(e) => err_response(e),
     }
@@ -292,4 +289,12 @@ pub fn create_guarded_party_routes(m: &PartyModule) -> Router {
         .merge(create_party_email_read_routes(m.party_email_service.clone()))
         .merge(create_party_phone_read_routes(m.party_phone_service.clone()))
         .merge(create_party_write_routes(m.party_write_service.clone()))
+
+        // Bind the composer's request pool (ADR-0029 pool law) for the verbs:
+        // under a tenant mount the writes go to the tenant's database; without
+        // one the composed pool stays the fallback. Applied AFTER the routes —
+        // a Router layer only wraps what was registered before the call.
+        .layer(axum::middleware::from_fn(
+            crate::request_pool::bind_request_pool,
+        ))
 }
