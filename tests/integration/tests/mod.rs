@@ -13,7 +13,6 @@ pub mod party_email_api_test;
 pub mod party_phone_api_test;
 
 // Re-exports for convenience
-pub use crud_test_base::*;
 pub use party_api_test::*;
 pub use party_address_api_test::*;
 pub use party_contact_api_test::*;

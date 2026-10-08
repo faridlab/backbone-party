@@ -24,8 +24,7 @@ pub mod application;
 pub mod presentation;
 pub mod seeders;
 pub mod exports;
-
-// <<< CUSTOM
+// <<< CUSTOM MODULES
 // The hand-owned request-pool shim (the composing service's tenant pool
 // resolution): a generated-tree declaration the regenerator drops, so it
 // lives in the preserved block (#447 cause-2 class).
@@ -56,6 +55,9 @@ pub use application::service::party_vat_validation::{
 };
 pub use presentation::http::create_guarded_party_routes;
 // END CUSTOM
+// Re-exports - Validation
+pub use application::validator::{ValidationError, ValidationResult};
+
 use std::sync::Arc;
 use axum::Router;
 use sqlx::PgPool;
@@ -151,6 +153,8 @@ impl PartyModule {
 /// Builder for PartyModule
 pub struct PartyModuleBuilder {
     db_pool: Option<PgPool>,
+    // <<< CUSTOM BUILDER FIELDS
+    // END CUSTOM
 }
 
 impl PartyModuleBuilder {
@@ -158,6 +162,8 @@ impl PartyModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
+            // <<< CUSTOM BUILDER DEFAULTS
+            // END CUSTOM
         }
     }
 
