@@ -211,7 +211,7 @@ impl PartyModuleBuilder {
 
         // Party service
         let party_repository = Arc::new(PartyRepository::new(db_pool.clone()));
-        let party_service = Arc::new(PartyService::with_repository(party_repository.clone()));
+        let party_service = Arc::new(PartyService::with_repository(party_repository.clone()).with_guard(Arc::new(crate::application::service::PartyRowRules)));
 
         // PartyAddress service
         let party_address_repository = Arc::new(PartyAddressRepository::new(db_pool.clone()));

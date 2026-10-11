@@ -13,6 +13,7 @@ version: 2
 state_machines:
   - entity: Party
     field: status
+    verbs: hand
     initial: active
     states: [active, inactive, blocked]
     transitions:
