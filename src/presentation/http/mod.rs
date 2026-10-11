@@ -12,7 +12,6 @@ pub mod party_email_handler;
 pub mod party_phone_handler;
 
 // <<< CUSTOM
-pub mod guarded_routes;
 // END CUSTOM
 
 // Re-exports
@@ -22,5 +21,7 @@ pub use party_contact_handler::{create_party_contact_routes, create_party_contac
 pub use party_email_handler::{create_party_email_routes, create_party_email_read_routes, create_party_email_write_routes};
 pub use party_phone_handler::{create_party_phone_routes, create_party_phone_read_routes, create_party_phone_write_routes};
 // <<< CUSTOM
-pub use guarded_routes::create_guarded_party_routes;
 // END CUSTOM
+
+// This directory's extension (hand-written; ADR-0031).
+include!("mod.ext.rs");

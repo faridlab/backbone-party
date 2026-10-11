@@ -25,11 +25,17 @@ pub mod presentation;
 pub mod seeders;
 pub mod exports;
 // <<< CUSTOM MODULES
-// The hand-owned request-pool shim (the composing service's tenant pool
-// resolution): a generated-tree declaration the regenerator drops, so it
-// lives in the preserved block (#447 cause-2 class).
-pub mod request_pool;
 // END CUSTOM
+
+// The module's extension (hand-written; ADR-0031).
+#[path = "lib.ext.rs"]
+mod lib_ext;
+pub use lib_ext::*;
+/// This crate's module and builder under fixed names, for the extension's `impl` blocks.
+#[allow(dead_code)]
+pub(crate) type ThisModule = PartyModule;
+#[allow(dead_code)]
+pub(crate) type ThisModuleBuilder = PartyModuleBuilder;
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -44,17 +50,6 @@ pub use application::service::PartyContactService;
 pub use application::service::PartyEmailService;
 pub use application::service::PartyPhoneService;
 
-// <<< CUSTOM
-pub use application::service::{
-    validate_nik, validate_npwp, NewAddress, NewContact, NewEmail, NewParty, NewPhone,
-    PartyWriteError, PartyWriteService,
-};
-pub use application::service::party_vat_validation::{
-    normalize_vat, validate_vat, validate_vat_with, VatError, VatValidationPolicy,
-    ALLOW_UNKNOWN_COUNTRIES_ENV, NO_VAT_SENTINEL,
-};
-pub use presentation::http::create_guarded_party_routes;
-// END CUSTOM
 // Re-exports - Validation
 pub use application::validator::{ValidationError, ValidationResult};
 
@@ -80,10 +75,39 @@ pub struct PartyModule {
     pub(crate) party_contact_service: Arc<PartyContactService>,
     pub(crate) party_email_service: Arc<PartyEmailService>,
     pub(crate) party_phone_service: Arc<PartyPhoneService>,
+    /// The module's extension state (`lib.ext.rs`); its fields read through `Deref`.
+    pub(crate) ext: ModuleExt,
     // <<< CUSTOM FIELDS
-    /// Validated party + child writes (NPWP/NIK format+uniqueness, party existence).
-    pub party_write_service: Arc<PartyWriteService>,
     // END CUSTOM
+}
+
+impl std::ops::Deref for PartyModule {
+    type Target = ModuleExt;
+    fn deref(&self) -> &Self::Target {
+        &self.ext
+    }
+}
+
+impl std::ops::DerefMut for PartyModule {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ext
+    }
+}
+
+/// What the extension's `build` hook receives from the generated build (ADR-0031).
+#[allow(dead_code)]
+pub(crate) struct ModuleParts<'a> {
+    pub(crate) db_pool: &'a PgPool,
+    pub(crate) party_service: &'a Arc<PartyService>,
+    pub(crate) party_repository: &'a Arc<PartyRepository>,
+    pub(crate) party_address_service: &'a Arc<PartyAddressService>,
+    pub(crate) party_address_repository: &'a Arc<PartyAddressRepository>,
+    pub(crate) party_contact_service: &'a Arc<PartyContactService>,
+    pub(crate) party_contact_repository: &'a Arc<PartyContactRepository>,
+    pub(crate) party_email_service: &'a Arc<PartyEmailService>,
+    pub(crate) party_email_repository: &'a Arc<PartyEmailRepository>,
+    pub(crate) party_phone_service: &'a Arc<PartyPhoneService>,
+    pub(crate) party_phone_repository: &'a Arc<PartyPhoneRepository>,
 }
 
 impl PartyModule {
@@ -153,8 +177,23 @@ impl PartyModule {
 /// Builder for PartyModule
 pub struct PartyModuleBuilder {
     db_pool: Option<PgPool>,
+    /// The builder's extension state (`lib.ext.rs`); its fields read through `Deref`.
+    ext: ModuleBuilderExt,
     // <<< CUSTOM BUILDER FIELDS
     // END CUSTOM
+}
+
+impl std::ops::Deref for PartyModuleBuilder {
+    type Target = ModuleBuilderExt;
+    fn deref(&self) -> &Self::Target {
+        &self.ext
+    }
+}
+
+impl std::ops::DerefMut for PartyModuleBuilder {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ext
+    }
 }
 
 impl PartyModuleBuilder {
@@ -162,6 +201,7 @@ impl PartyModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
+            ext: Default::default(),
             // <<< CUSTOM BUILDER DEFAULTS
             // END CUSTOM
         }
@@ -202,13 +242,22 @@ impl PartyModuleBuilder {
         let party_phone_service = Arc::new(PartyPhoneService::with_repository(party_phone_repository.clone()));
 
         // <<< CUSTOM
-        // VAT posture from the named configuration escape (fail-closed unless
-        // PARTY_VAT_ALLOW_UNKNOWN_COUNTRIES is explicitly armed).
-        let party_write_service = Arc::new(PartyWriteService::with_vat_policy(
-            db_pool.clone(),
-            VatValidationPolicy::from_env(),
-        ));
         // END CUSTOM
+
+        // The extension builds its own state from what the generated build made.
+        let ext = self.ext.build(&ModuleParts {
+            db_pool: &db_pool,
+            party_service: &party_service,
+            party_repository: &party_repository,
+            party_address_service: &party_address_service,
+            party_address_repository: &party_address_repository,
+            party_contact_service: &party_contact_service,
+            party_contact_repository: &party_contact_repository,
+            party_email_service: &party_email_service,
+            party_email_repository: &party_email_repository,
+            party_phone_service: &party_phone_service,
+            party_phone_repository: &party_phone_repository,
+        })?;
 
         Ok(PartyModule {
             party_service,
@@ -216,8 +265,8 @@ impl PartyModuleBuilder {
             party_contact_service,
             party_email_service,
             party_phone_service,
+            ext,
             // <<< CUSTOM
-            party_write_service,
             // END CUSTOM
         })
     }
@@ -228,3 +277,6 @@ impl Default for PartyModuleBuilder {
         Self::new()
     }
 }
+
+// This directory's extension (hand-written; ADR-0031).
+include!("mod.ext.rs");
