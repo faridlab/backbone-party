@@ -118,6 +118,4 @@ mod tests {
 // CUSTOM TESTS
 // ============================================================================
 
-// <<< CUSTOM TESTS START >>>
 // Add PartyContact specific tests here
-// <<< CUSTOM TESTS END >>>

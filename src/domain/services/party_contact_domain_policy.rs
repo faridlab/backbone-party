@@ -18,5 +18,3 @@ use crate::domain::entity::PartyContact;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type PartyContactDomainPolicy = PermitAllPolicy<PartyContact>;
 
-// <<< CUSTOM
-// END CUSTOM

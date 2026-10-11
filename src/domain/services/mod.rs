@@ -14,5 +14,3 @@ pub use party_contact_domain_policy::PartyContactDomainPolicy;
 pub use party_email_domain_policy::PartyEmailDomainPolicy;
 pub use party_phone_domain_policy::PartyPhoneDomainPolicy;
 
-// <<< CUSTOM
-// END CUSTOM

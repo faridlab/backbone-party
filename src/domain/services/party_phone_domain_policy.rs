@@ -18,5 +18,3 @@ use crate::domain::entity::PartyPhone;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type PartyPhoneDomainPolicy = PermitAllPolicy<PartyPhone>;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -194,8 +194,6 @@ impl PartyContact {
         }
     }
 
-    // <<< CUSTOM METHODS START >>>
-    // <<< CUSTOM METHODS END >>>
 }
 
 impl super::Entity for PartyContact {

@@ -24,9 +24,5 @@ pub fn party_validator() -> PartyValidator {
         .rule(OptionalNotBlank::new("nik", |e: &Party| e.nik.as_deref()))
         .rule(OptionalNotBlank::new("vat", |e: &Party| e.vat.as_deref()))
         .rule(OptionalNotBlank::new("notes", |e: &Party| e.notes.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

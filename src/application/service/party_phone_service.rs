@@ -32,5 +32,3 @@ pub type PartyPhoneService = GenericCrudService<
     PartyPhoneRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

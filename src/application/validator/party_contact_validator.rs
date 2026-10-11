@@ -20,9 +20,5 @@ pub fn party_contact_validator() -> PartyContactValidator {
         .rule(OptionalNotBlank::new("department", |e: &PartyContact| e.department.as_deref()))
         .rule(OptionalNotBlank::new("email", |e: &PartyContact| e.email.as_deref()))
         .rule(OptionalNotBlank::new("phone", |e: &PartyContact| e.phone.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

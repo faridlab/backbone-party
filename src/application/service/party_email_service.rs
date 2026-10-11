@@ -32,5 +32,3 @@ pub type PartyEmailService = GenericCrudService<
     PartyEmailRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

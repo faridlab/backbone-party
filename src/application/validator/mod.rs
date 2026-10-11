@@ -17,5 +17,3 @@ pub use party_contact_validator::{PartyContactValidator, party_contact_validator
 pub use party_email_validator::{PartyEmailValidator, party_email_validator};
 pub use party_phone_validator::{PartyPhoneValidator, party_phone_validator};
 
-// <<< CUSTOM
-// END CUSTOM

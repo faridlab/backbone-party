@@ -32,5 +32,3 @@ pub type PartyAddressService = GenericCrudService<
     PartyAddressRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

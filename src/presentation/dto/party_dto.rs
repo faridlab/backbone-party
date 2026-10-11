@@ -362,7 +362,7 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyDto> for Party {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Party here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

@@ -24,5 +24,3 @@ pub use party_email_event_handlers::PartyEmailEventHandler;
 pub use party_phone_events::{PartyPhoneEvent, PartyPhoneEventPublisher, NoopPartyPhoneEventPublisher};
 pub use party_phone_event_handlers::PartyPhoneEventHandler;
 
-// <<< CUSTOM
-// END CUSTOM

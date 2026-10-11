@@ -19,9 +19,5 @@ pub fn party_address_validator() -> PartyAddressValidator {
         .rule(RequiredString::new("line1", |e: &PartyAddress| &e.line1))
         .rule(OptionalNotBlank::new("line2", |e: &PartyAddress| e.line2.as_deref()))
         .rule(OptionalNotBlank::new("postal_code", |e: &PartyAddress| e.postal_code.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

@@ -270,7 +270,7 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyPhoneDto> for PartyPhone {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to PartyPhone here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

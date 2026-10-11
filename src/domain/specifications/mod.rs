@@ -12,5 +12,3 @@ pub mod party_contact_specification;
 pub mod party_email_specification;
 pub mod party_phone_specification;
 
-// <<< CUSTOM
-// END CUSTOM

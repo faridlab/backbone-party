@@ -24,8 +24,6 @@ pub mod application;
 pub mod presentation;
 pub mod seeders;
 pub mod exports;
-// <<< CUSTOM MODULES
-// END CUSTOM
 
 // The module's extension (hand-written; ADR-0031).
 #[path = "lib.ext.rs"]
@@ -77,8 +75,6 @@ pub struct PartyModule {
     pub(crate) party_phone_service: Arc<PartyPhoneService>,
     /// The module's extension state (`lib.ext.rs`); its fields read through `Deref`.
     pub(crate) ext: ModuleExt,
-    // <<< CUSTOM FIELDS
-    // END CUSTOM
 }
 
 impl std::ops::Deref for PartyModule {
@@ -170,8 +166,6 @@ impl PartyModule {
             .merge(create_party_phone_read_routes(self.party_phone_service.clone()))
     }
 
-    // <<< CUSTOM METHODS
-    // END CUSTOM
 }
 
 /// Builder for PartyModule
@@ -179,8 +173,6 @@ pub struct PartyModuleBuilder {
     db_pool: Option<PgPool>,
     /// The builder's extension state (`lib.ext.rs`); its fields read through `Deref`.
     ext: ModuleBuilderExt,
-    // <<< CUSTOM BUILDER FIELDS
-    // END CUSTOM
 }
 
 impl std::ops::Deref for PartyModuleBuilder {
@@ -202,8 +194,6 @@ impl PartyModuleBuilder {
         Self {
             db_pool: None,
             ext: Default::default(),
-            // <<< CUSTOM BUILDER DEFAULTS
-            // END CUSTOM
         }
     }
 
@@ -213,8 +203,6 @@ impl PartyModuleBuilder {
         self
     }
 
-    // <<< CUSTOM - custom builder methods
-    // END CUSTOM
 
     /// Build the module with configured dependencies
     pub fn build(self) -> anyhow::Result<PartyModule> {
@@ -241,8 +229,6 @@ impl PartyModuleBuilder {
         let party_phone_repository = Arc::new(PartyPhoneRepository::new(db_pool.clone()));
         let party_phone_service = Arc::new(PartyPhoneService::with_repository(party_phone_repository.clone()));
 
-        // <<< CUSTOM
-        // END CUSTOM
 
         // The extension builds its own state from what the generated build made.
         let ext = self.ext.build(&ModuleParts {
@@ -266,8 +252,6 @@ impl PartyModuleBuilder {
             party_email_service,
             party_phone_service,
             ext,
-            // <<< CUSTOM
-            // END CUSTOM
         })
     }
 }

@@ -270,7 +270,7 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyEmailDto> for PartyEmail {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to PartyEmail here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

@@ -17,9 +17,5 @@ pub fn party_phone_validator() -> PartyPhoneValidator {
     EntityValidator::new()
         .rule(RequiredString::new("label", |e: &PartyPhone| &e.label))
         .rule(RequiredString::new("phone", |e: &PartyPhone| &e.phone))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

@@ -11,8 +11,6 @@ pub mod party_contact_handler;
 pub mod party_email_handler;
 pub mod party_phone_handler;
 
-// <<< CUSTOM
-// END CUSTOM
 
 // Re-exports
 pub use party_handler::{create_party_routes, create_party_read_routes, create_party_write_routes};
@@ -20,8 +18,6 @@ pub use party_address_handler::{create_party_address_routes, create_party_addres
 pub use party_contact_handler::{create_party_contact_routes, create_party_contact_read_routes, create_party_contact_write_routes};
 pub use party_email_handler::{create_party_email_routes, create_party_email_read_routes, create_party_email_write_routes};
 pub use party_phone_handler::{create_party_phone_routes, create_party_phone_read_routes, create_party_phone_write_routes};
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

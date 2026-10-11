@@ -186,3 +186,4 @@ pub fn create_protected_party_contact_routes<A: AuthMiddleware + Send + Sync + '
             }
         }))
 }
+

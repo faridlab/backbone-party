@@ -13,16 +13,12 @@ pub mod party_contact_service;
 pub mod party_email_service;
 pub mod party_phone_service;
 
-// <<< CUSTOM
-// END CUSTOM
 
 pub use party_service::PartyService;
 pub use party_address_service::PartyAddressService;
 pub use party_contact_service::PartyContactService;
 pub use party_email_service::PartyEmailService;
 pub use party_phone_service::PartyPhoneService;
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

@@ -17,9 +17,5 @@ pub fn party_email_validator() -> PartyEmailValidator {
     EntityValidator::new()
         .rule(RequiredString::new("label", |e: &PartyEmail| &e.label))
         .rule(RequiredString::new("email", |e: &PartyEmail| &e.email))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM
