@@ -28,57 +28,83 @@ state_machines:
 rules:
   - id: R1
     name: npwp_format
+    entity: Party
     when: creating_party
     assert: "npwp present => digits(npwp) in {15, 16}"
     error_code: invalid_npwp
+    enforced_by: "src/application/service/party_write_service.rs::create_party, src/application/service/party_write_service.rs::validate_npwp"
+    justification: "Counts digits as the rule states, on the only party writer mounted. The number is stored as typed, so separators make a second key for the uniqueness rules."
   - id: R2
     name: nik_format
+    entity: Party
     when: creating_party
     assert: "nik present => digits(nik) == 16"
     error_code: invalid_nik
+    enforced_by: "src/application/service/party_write_service.rs::create_party, src/application/service/party_write_service.rs::validate_nik"
+    justification: "Counts digits as the rule states; stored as typed, as npwp_format."
   - id: R3
     name: unique_party_code
+    entity: Party
     when: creating_party
     assert: "party_code unique among non-deleted parties"
     error_code: duplicate_party_code
+    justification: "PARTLY: the module's party_code unique was dropped with tenancy and create_party does no pre-check, so a bare deployment accepts duplicates. The composing service's tenancy posture installs the per-unit unique, which create_party maps to duplicate_party_code."
   - id: R4
     name: unique_npwp
+    entity: Party
     when: creating_party
     assert: "npwp unique among non-deleted parties (when present)"
     error_code: duplicate_npwp
+    justification: "PARTLY: as unique_party_code, and the value is compared as typed, so the same number with and without separators passes."
   - id: R5
     name: unique_nik
+    entity: Party
     when: creating_party
     assert: "nik unique among non-deleted parties (when present)"
     error_code: duplicate_nik
+    justification: "PARTLY: as unique_npwp."
   - id: R6
     name: child_party_exists
+    entity: PartyAddress
     when: adding_child
     assert: "party_id references an existing non-deleted Party"
     error_code: party_not_found
+    enforced_by: "src/application/service/party_write_service.rs::party_exists, src/application/service/party_write_service.rs::add_address, src/application/service/party_write_service.rs::add_contact, src/application/service/party_write_service.rs::add_email, src/application/service/party_write_service.rs::add_phone, src/infrastructure/persistence/party_repository.rs::find_active_id, migrations/20260426220002_create_party_address_table.up.sql::fk_party_addresses_party_id, migrations/20260426220003_create_party_contact_table.up.sql::fk_party_contacts_party_id, migrations/20260426220004_create_party_email_table.up.sql::fk_party_emails_party_id, migrations/20260426220005_create_party_phone_table.up.sql::fk_party_phones_party_id"
+    justification: "Every child verb checks the party is live before it writes; the check takes no lock and the foreign keys do not see soft deletes, but no party soft delete is mounted. Covers the address, contact, email and phone children."
   - id: R7
     name: email_shape
+    entity: PartyEmail
     when: adding_email
     assert: "email contains '@'"
     error_code: invalid_email
+    enforced_by: "src/application/service/party_write_service.rs::add_email"
+    justification: "Holds on add_email; a contact's email field is not checked."
   - id: R8
     name: geo_refs_are_logical
+    entity: PartyAddress
     when: adding_address
     assert: "country/province/city/district/subdistrict ids are LOGICAL FKs to backbone-geo"
     error_code: none
+    justification: "States an absence, not a check: geo ids on an address are logical references the consuming service validates, so there is nothing here to enforce."
     note: "not validated against geo's schema here — validated at the ACL layer / consuming service"
   # Council 2026-07-02
   - id: R9
     name: one_primary_per_party
+    entity: PartyEmail
     when: adding_child
     assert: "at most one is_primary child per (party, kind) — partial-unique index"
     error_code: duplicate_primary
+    enforced_by: "migrations/20260908120000_strip_tenancy.up.sql::idx_party_addresses_party_id, migrations/20260908120000_strip_tenancy.up.sql::idx_party_contacts_party_id, migrations/20260908120000_strip_tenancy.up.sql::idx_party_emails_party_id, migrations/20260908120000_strip_tenancy.up.sql::idx_party_phones_party_id, src/application/service/party_write_service.rs::set_primary"
+    justification: "One partial unique per child table. set_primary clears then sets in one transaction; a concurrent primary add that commits between the two answers 500 rather than duplicate_primary."
     note: "set_primary(party, kind, child) switches which one is primary (clear-then-set in one tx)"
   - id: R10
     name: kind_field_consistency
+    entity: Party
     when: creating_party
     assert: "person requires first_name or last_name; organization requires legal_name and no NIK"
     error_code: inconsistent_party_kind
+    enforced_by: "src/application/service/party_write_service.rs::create_party"
+    justification: "Holds on create_party; an unknown kind fails the enum cast as a 500 instead of this code."
 
 # -----------------------------------------------------------------------------
 # Domain events (owner publishes; consumers project — docs/erp/shared-masters-ownership.md).

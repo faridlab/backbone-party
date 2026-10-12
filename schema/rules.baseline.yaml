@@ -1,17 +1,11 @@
 # The rule ratchet (schema doctor): these counts may only go down. Regenerate with
 # `metaphor schema rules . --update-baseline` after enforcing a rule.
-unenforced: 10
+unenforced: 4
 warnings: 0
 machines_without_verbs: 0
 untested_rule_ids: 10
 unenforced_rules:
-- 'party.hook.yaml: child_party_exists'
-- 'party.hook.yaml: email_shape'
 - 'party.hook.yaml: geo_refs_are_logical'
-- 'party.hook.yaml: kind_field_consistency'
-- 'party.hook.yaml: nik_format'
-- 'party.hook.yaml: npwp_format'
-- 'party.hook.yaml: one_primary_per_party'
 - 'party.hook.yaml: unique_nik'
 - 'party.hook.yaml: unique_npwp'
 - 'party.hook.yaml: unique_party_code'
