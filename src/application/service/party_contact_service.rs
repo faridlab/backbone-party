@@ -32,3 +32,61 @@ pub type PartyContactService = GenericCrudService<
     PartyContactRepository,
 >;
 
+/// The rules the schema declares for PartyContact, checked against the row a create or update
+/// would store. The generated build attaches it to [`PartyContactService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct PartyContactRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<PartyContact> for PartyContactRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, PartyContact>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `party_id_required` (@required on PartyContact.party_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["party_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "party_id")), r::not(r::is_empty(r::trim(r::field(row, "party_id")))))) {
+            refuse.push(Violation::new("party_id", "required", "party_id is required"));
+        }
+        // `name_required` (@required on PartyContact.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
+            refuse.push(Violation::new("name", "required", "name is required"));
+        }
+        // `name_max_length` (@max(150) on PartyContact.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(150.0_f64))) {
+            shadow.push(Violation::new("name", "max_length", "name must be at most 150 characters").with_param("max", 150_i64));
+        }
+        // `job_title_max_length` (@max(120) on PartyContact.job_title)
+        if (create || (update && r::changed(old.as_ref(), row, &["job_title"]))) && !r::holds(&r::le(r::length(r::field(row, "job_title")), r::Val::Num(120.0_f64))) {
+            shadow.push(Violation::new("job_title", "max_length", "job_title must be at most 120 characters").with_param("max", 120_i64));
+        }
+        // `department_max_length` (@max(120) on PartyContact.department)
+        if (create || (update && r::changed(old.as_ref(), row, &["department"]))) && !r::holds(&r::le(r::length(r::field(row, "department")), r::Val::Num(120.0_f64))) {
+            shadow.push(Violation::new("department", "max_length", "department must be at most 120 characters").with_param("max", 120_i64));
+        }
+        // `email_max_length` (@max(150) on PartyContact.email)
+        if (create || (update && r::changed(old.as_ref(), row, &["email"]))) && !r::holds(&r::le(r::length(r::field(row, "email")), r::Val::Num(150.0_f64))) {
+            shadow.push(Violation::new("email", "max_length", "email must be at most 150 characters").with_param("max", 150_i64));
+        }
+        // `phone_max_length` (@max(30) on PartyContact.phone)
+        if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::le(r::length(r::field(row, "phone")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

@@ -32,3 +32,49 @@ pub type PartyPhoneService = GenericCrudService<
     PartyPhoneRepository,
 >;
 
+/// The rules the schema declares for PartyPhone, checked against the row a create or update
+/// would store. The generated build attaches it to [`PartyPhoneService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct PartyPhoneRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<PartyPhone> for PartyPhoneRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, PartyPhone>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `party_id_required` (@required on PartyPhone.party_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["party_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "party_id")), r::not(r::is_empty(r::trim(r::field(row, "party_id")))))) {
+            refuse.push(Violation::new("party_id", "required", "party_id is required"));
+        }
+        // `label_max_length` (@max(30) on PartyPhone.label)
+        if (create || (update && r::changed(old.as_ref(), row, &["label"]))) && !r::holds(&r::le(r::length(r::field(row, "label")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("label", "max_length", "label must be at most 30 characters").with_param("max", 30_i64));
+        }
+        // `phone_required` (@required on PartyPhone.phone)
+        if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "phone")), r::not(r::is_empty(r::trim(r::field(row, "phone")))))) {
+            refuse.push(Violation::new("phone", "required", "phone is required"));
+        }
+        // `phone_max_length` (@max(30) on PartyPhone.phone)
+        if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::le(r::length(r::field(row, "phone")), r::Val::Num(30.0_f64))) {
+            shadow.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

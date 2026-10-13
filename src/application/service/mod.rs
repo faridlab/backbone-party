@@ -20,6 +20,10 @@ pub use party_contact_service::PartyContactService;
 pub use party_email_service::PartyEmailService;
 pub use party_phone_service::PartyPhoneService;
 pub use party_service::PartyRowRules;
+pub use party_address_service::PartyAddressRowRules;
+pub use party_contact_service::PartyContactRowRules;
+pub use party_email_service::PartyEmailRowRules;
+pub use party_phone_service::PartyPhoneRowRules;
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

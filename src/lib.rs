@@ -48,9 +48,6 @@ pub use application::service::PartyContactService;
 pub use application::service::PartyEmailService;
 pub use application::service::PartyPhoneService;
 
-// Re-exports - Validation
-pub use application::validator::{ValidationError, ValidationResult};
-
 use std::sync::Arc;
 use axum::Router;
 use sqlx::PgPool;
@@ -215,19 +212,19 @@ impl PartyModuleBuilder {
 
         // PartyAddress service
         let party_address_repository = Arc::new(PartyAddressRepository::new(db_pool.clone()));
-        let party_address_service = Arc::new(PartyAddressService::with_repository(party_address_repository.clone()));
+        let party_address_service = Arc::new(PartyAddressService::with_repository(party_address_repository.clone()).with_guard(Arc::new(crate::application::service::PartyAddressRowRules)));
 
         // PartyContact service
         let party_contact_repository = Arc::new(PartyContactRepository::new(db_pool.clone()));
-        let party_contact_service = Arc::new(PartyContactService::with_repository(party_contact_repository.clone()));
+        let party_contact_service = Arc::new(PartyContactService::with_repository(party_contact_repository.clone()).with_guard(Arc::new(crate::application::service::PartyContactRowRules)));
 
         // PartyEmail service
         let party_email_repository = Arc::new(PartyEmailRepository::new(db_pool.clone()));
-        let party_email_service = Arc::new(PartyEmailService::with_repository(party_email_repository.clone()));
+        let party_email_service = Arc::new(PartyEmailService::with_repository(party_email_repository.clone()).with_guard(Arc::new(crate::application::service::PartyEmailRowRules)));
 
         // PartyPhone service
         let party_phone_repository = Arc::new(PartyPhoneRepository::new(db_pool.clone()));
-        let party_phone_service = Arc::new(PartyPhoneService::with_repository(party_phone_repository.clone()));
+        let party_phone_service = Arc::new(PartyPhoneService::with_repository(party_phone_repository.clone()).with_guard(Arc::new(crate::application::service::PartyPhoneRowRules)));
 
 
         // The extension builds its own state from what the generated build made.

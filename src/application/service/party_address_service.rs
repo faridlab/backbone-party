@@ -32,3 +32,57 @@ pub type PartyAddressService = GenericCrudService<
     PartyAddressRepository,
 >;
 
+/// The rules the schema declares for PartyAddress, checked against the row a create or update
+/// would store. The generated build attaches it to [`PartyAddressService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct PartyAddressRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<PartyAddress> for PartyAddressRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, PartyAddress>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `party_id_required` (@required on PartyAddress.party_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["party_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "party_id")), r::not(r::is_empty(r::trim(r::field(row, "party_id")))))) {
+            refuse.push(Violation::new("party_id", "required", "party_id is required"));
+        }
+        // `label_max_length` (@max(60) on PartyAddress.label)
+        if (create || (update && r::changed(old.as_ref(), row, &["label"]))) && !r::holds(&r::le(r::length(r::field(row, "label")), r::Val::Num(60.0_f64))) {
+            shadow.push(Violation::new("label", "max_length", "label must be at most 60 characters").with_param("max", 60_i64));
+        }
+        // `line1_required` (@required on PartyAddress.line1)
+        if (create || (update && r::changed(old.as_ref(), row, &["line1"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "line1")), r::not(r::is_empty(r::trim(r::field(row, "line1")))))) {
+            refuse.push(Violation::new("line1", "required", "line1 is required"));
+        }
+        // `line1_max_length` (@max(255) on PartyAddress.line1)
+        if (create || (update && r::changed(old.as_ref(), row, &["line1"]))) && !r::holds(&r::le(r::length(r::field(row, "line1")), r::Val::Num(255.0_f64))) {
+            shadow.push(Violation::new("line1", "max_length", "line1 must be at most 255 characters").with_param("max", 255_i64));
+        }
+        // `line2_max_length` (@max(255) on PartyAddress.line2)
+        if (create || (update && r::changed(old.as_ref(), row, &["line2"]))) && !r::holds(&r::le(r::length(r::field(row, "line2")), r::Val::Num(255.0_f64))) {
+            shadow.push(Violation::new("line2", "max_length", "line2 must be at most 255 characters").with_param("max", 255_i64));
+        }
+        // `postal_code_max_length` (@max(10) on PartyAddress.postal_code)
+        if (create || (update && r::changed(old.as_ref(), row, &["postal_code"]))) && !r::holds(&r::le(r::length(r::field(row, "postal_code")), r::Val::Num(10.0_f64))) {
+            shadow.push(Violation::new("postal_code", "max_length", "postal_code must be at most 10 characters").with_param("max", 10_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+
