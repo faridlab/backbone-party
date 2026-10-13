@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<PartyPhone> for PartyPhoneRowRules {
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `party_id_required` (@required on PartyPhone.party_id)
         if (create || (update && r::changed(old.as_ref(), row, &["party_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "party_id")), r::not(r::is_empty(r::trim(r::field(row, "party_id")))))) {
@@ -64,7 +64,7 @@ impl backbone_core::write_guard::WriteGuard<PartyPhone> for PartyPhoneRowRules {
         }
         // `label_max_length` (@max(30) on PartyPhone.label)
         if (create || (update && r::changed(old.as_ref(), row, &["label"]))) && !r::holds(&r::le(r::length(r::field(row, "label")), r::Val::Num(30.0_f64))) {
-            shadow.push(Violation::new("label", "max_length", "label must be at most 30 characters").with_param("max", 30_i64));
+            refuse.push(Violation::new("label", "max_length", "label must be at most 30 characters").with_param("max", 30_i64));
         }
         // `phone_required` (@required on PartyPhone.phone)
         if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "phone")), r::not(r::is_empty(r::trim(r::field(row, "phone")))))) {
@@ -72,7 +72,7 @@ impl backbone_core::write_guard::WriteGuard<PartyPhone> for PartyPhoneRowRules {
         }
         // `phone_max_length` (@max(30) on PartyPhone.phone)
         if (create || (update && r::changed(old.as_ref(), row, &["phone"]))) && !r::holds(&r::le(r::length(r::field(row, "phone")), r::Val::Num(30.0_f64))) {
-            shadow.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
+            refuse.push(Violation::new("phone", "max_length", "phone must be at most 30 characters").with_param("max", 30_i64));
         }
         GuardOutcome { refuse, shadow }
     }

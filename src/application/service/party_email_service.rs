@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<PartyEmail> for PartyEmailRowRules {
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `party_id_required` (@required on PartyEmail.party_id)
         if (create || (update && r::changed(old.as_ref(), row, &["party_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "party_id")), r::not(r::is_empty(r::trim(r::field(row, "party_id")))))) {
@@ -64,7 +64,7 @@ impl backbone_core::write_guard::WriteGuard<PartyEmail> for PartyEmailRowRules {
         }
         // `label_max_length` (@max(30) on PartyEmail.label)
         if (create || (update && r::changed(old.as_ref(), row, &["label"]))) && !r::holds(&r::le(r::length(r::field(row, "label")), r::Val::Num(30.0_f64))) {
-            shadow.push(Violation::new("label", "max_length", "label must be at most 30 characters").with_param("max", 30_i64));
+            refuse.push(Violation::new("label", "max_length", "label must be at most 30 characters").with_param("max", 30_i64));
         }
         // `email_required` (@required on PartyEmail.email)
         if (create || (update && r::changed(old.as_ref(), row, &["email"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "email")), r::not(r::is_empty(r::trim(r::field(row, "email")))))) {
@@ -72,7 +72,7 @@ impl backbone_core::write_guard::WriteGuard<PartyEmail> for PartyEmailRowRules {
         }
         // `email_max_length` (@max(150) on PartyEmail.email)
         if (create || (update && r::changed(old.as_ref(), row, &["email"]))) && !r::holds(&r::le(r::length(r::field(row, "email")), r::Val::Num(150.0_f64))) {
-            shadow.push(Violation::new("email", "max_length", "email must be at most 150 characters").with_param("max", 150_i64));
+            refuse.push(Violation::new("email", "max_length", "email must be at most 150 characters").with_param("max", 150_i64));
         }
         GuardOutcome { refuse, shadow }
     }

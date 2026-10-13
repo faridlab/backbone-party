@@ -68,7 +68,7 @@ impl backbone_core::write_guard::WriteGuard<Party> for PartyRowRules {
         }
         // `party_code_max_length` (@max(30) on Party.party_code)
         if (create || (update && r::changed(old.as_ref(), row, &["party_code"]))) && !r::holds(&r::le(r::length(r::field(row, "party_code")), r::Val::Num(30.0_f64))) {
-            shadow.push(Violation::new("party_code", "max_length", "party_code must be at most 30 characters").with_param("max", 30_i64));
+            refuse.push(Violation::new("party_code", "max_length", "party_code must be at most 30 characters").with_param("max", 30_i64));
         }
         // `name_required` (@required on Party.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
@@ -76,35 +76,35 @@ impl backbone_core::write_guard::WriteGuard<Party> for PartyRowRules {
         }
         // `name_max_length` (@max(200) on Party.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(200.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
         }
         // `legal_name_max_length` (@max(200) on Party.legal_name)
         if (create || (update && r::changed(old.as_ref(), row, &["legal_name"]))) && !r::holds(&r::le(r::length(r::field(row, "legal_name")), r::Val::Num(200.0_f64))) {
-            shadow.push(Violation::new("legal_name", "max_length", "legal_name must be at most 200 characters").with_param("max", 200_i64));
+            refuse.push(Violation::new("legal_name", "max_length", "legal_name must be at most 200 characters").with_param("max", 200_i64));
         }
         // `first_name_max_length` (@max(100) on Party.first_name)
         if (create || (update && r::changed(old.as_ref(), row, &["first_name"]))) && !r::holds(&r::le(r::length(r::field(row, "first_name")), r::Val::Num(100.0_f64))) {
-            shadow.push(Violation::new("first_name", "max_length", "first_name must be at most 100 characters").with_param("max", 100_i64));
+            refuse.push(Violation::new("first_name", "max_length", "first_name must be at most 100 characters").with_param("max", 100_i64));
         }
         // `last_name_max_length` (@max(100) on Party.last_name)
         if (create || (update && r::changed(old.as_ref(), row, &["last_name"]))) && !r::holds(&r::le(r::length(r::field(row, "last_name")), r::Val::Num(100.0_f64))) {
-            shadow.push(Violation::new("last_name", "max_length", "last_name must be at most 100 characters").with_param("max", 100_i64));
+            refuse.push(Violation::new("last_name", "max_length", "last_name must be at most 100 characters").with_param("max", 100_i64));
         }
         // `npwp_max_length` (@max(25) on Party.npwp)
         if (create || (update && r::changed(old.as_ref(), row, &["npwp"]))) && !r::holds(&r::le(r::length(r::field(row, "npwp")), r::Val::Num(25.0_f64))) {
-            shadow.push(Violation::new("npwp", "max_length", "npwp must be at most 25 characters").with_param("max", 25_i64));
+            refuse.push(Violation::new("npwp", "max_length", "npwp must be at most 25 characters").with_param("max", 25_i64));
         }
         // `nik_max_length` (@max(20) on Party.nik)
         if (create || (update && r::changed(old.as_ref(), row, &["nik"]))) && !r::holds(&r::le(r::length(r::field(row, "nik")), r::Val::Num(20.0_f64))) {
-            shadow.push(Violation::new("nik", "max_length", "nik must be at most 20 characters").with_param("max", 20_i64));
+            refuse.push(Violation::new("nik", "max_length", "nik must be at most 20 characters").with_param("max", 20_i64));
         }
         // `vat_max_length` (@max(32) on Party.vat)
         if (create || (update && r::changed(old.as_ref(), row, &["vat"]))) && !r::holds(&r::le(r::length(r::field(row, "vat")), r::Val::Num(32.0_f64))) {
-            shadow.push(Violation::new("vat", "max_length", "vat must be at most 32 characters").with_param("max", 32_i64));
+            refuse.push(Violation::new("vat", "max_length", "vat must be at most 32 characters").with_param("max", 32_i64));
         }
         // `notes_max_length` (@max(1000) on Party.notes)
         if (create || (update && r::changed(old.as_ref(), row, &["notes"]))) && !r::holds(&r::le(r::length(r::field(row, "notes")), r::Val::Num(1000.0_f64))) {
-            shadow.push(Violation::new("notes", "max_length", "notes must be at most 1000 characters").with_param("max", 1000_i64));
+            refuse.push(Violation::new("notes", "max_length", "notes must be at most 1000 characters").with_param("max", 1000_i64));
         }
         GuardOutcome { refuse, shadow }
     }

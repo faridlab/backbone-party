@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<PartyAddress> for PartyAddressRowRul
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `party_id_required` (@required on PartyAddress.party_id)
         if (create || (update && r::changed(old.as_ref(), row, &["party_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "party_id")), r::not(r::is_empty(r::trim(r::field(row, "party_id")))))) {
@@ -64,7 +64,7 @@ impl backbone_core::write_guard::WriteGuard<PartyAddress> for PartyAddressRowRul
         }
         // `label_max_length` (@max(60) on PartyAddress.label)
         if (create || (update && r::changed(old.as_ref(), row, &["label"]))) && !r::holds(&r::le(r::length(r::field(row, "label")), r::Val::Num(60.0_f64))) {
-            shadow.push(Violation::new("label", "max_length", "label must be at most 60 characters").with_param("max", 60_i64));
+            refuse.push(Violation::new("label", "max_length", "label must be at most 60 characters").with_param("max", 60_i64));
         }
         // `line1_required` (@required on PartyAddress.line1)
         if (create || (update && r::changed(old.as_ref(), row, &["line1"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "line1")), r::not(r::is_empty(r::trim(r::field(row, "line1")))))) {
@@ -72,15 +72,15 @@ impl backbone_core::write_guard::WriteGuard<PartyAddress> for PartyAddressRowRul
         }
         // `line1_max_length` (@max(255) on PartyAddress.line1)
         if (create || (update && r::changed(old.as_ref(), row, &["line1"]))) && !r::holds(&r::le(r::length(r::field(row, "line1")), r::Val::Num(255.0_f64))) {
-            shadow.push(Violation::new("line1", "max_length", "line1 must be at most 255 characters").with_param("max", 255_i64));
+            refuse.push(Violation::new("line1", "max_length", "line1 must be at most 255 characters").with_param("max", 255_i64));
         }
         // `line2_max_length` (@max(255) on PartyAddress.line2)
         if (create || (update && r::changed(old.as_ref(), row, &["line2"]))) && !r::holds(&r::le(r::length(r::field(row, "line2")), r::Val::Num(255.0_f64))) {
-            shadow.push(Violation::new("line2", "max_length", "line2 must be at most 255 characters").with_param("max", 255_i64));
+            refuse.push(Violation::new("line2", "max_length", "line2 must be at most 255 characters").with_param("max", 255_i64));
         }
         // `postal_code_max_length` (@max(10) on PartyAddress.postal_code)
         if (create || (update && r::changed(old.as_ref(), row, &["postal_code"]))) && !r::holds(&r::le(r::length(r::field(row, "postal_code")), r::Val::Num(10.0_f64))) {
-            shadow.push(Violation::new("postal_code", "max_length", "postal_code must be at most 10 characters").with_param("max", 10_i64));
+            refuse.push(Violation::new("postal_code", "max_length", "postal_code must be at most 10 characters").with_param("max", 10_i64));
         }
         GuardOutcome { refuse, shadow }
     }
