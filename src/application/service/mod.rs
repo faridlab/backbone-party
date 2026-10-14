@@ -25,5 +25,45 @@ pub use party_contact_service::PartyContactRowRules;
 pub use party_email_service::PartyEmailRowRules;
 pub use party_phone_service::PartyPhoneRowRules;
 
+/// A `PartyService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_party_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::PartyRepository>,
+) -> PartyService {
+    PartyService::with_repository(repository).with_guard(std::sync::Arc::new(PartyRowRules))
+}
+
+/// A `PartyAddressService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_party_address_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::PartyAddressRepository>,
+) -> PartyAddressService {
+    PartyAddressService::with_repository(repository).with_guard(std::sync::Arc::new(PartyAddressRowRules))
+}
+
+/// A `PartyContactService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_party_contact_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::PartyContactRepository>,
+) -> PartyContactService {
+    PartyContactService::with_repository(repository).with_guard(std::sync::Arc::new(PartyContactRowRules))
+}
+
+/// A `PartyEmailService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_party_email_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::PartyEmailRepository>,
+) -> PartyEmailService {
+    PartyEmailService::with_repository(repository).with_guard(std::sync::Arc::new(PartyEmailRowRules))
+}
+
+/// A `PartyPhoneService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_party_phone_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::PartyPhoneRepository>,
+) -> PartyPhoneService {
+    PartyPhoneService::with_repository(repository).with_guard(std::sync::Arc::new(PartyPhoneRowRules))
+}
+
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

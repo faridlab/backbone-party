@@ -208,23 +208,23 @@ impl PartyModuleBuilder {
 
         // Party service
         let party_repository = Arc::new(PartyRepository::new(db_pool.clone()));
-        let party_service = Arc::new(PartyService::with_repository(party_repository.clone()).with_guard(Arc::new(crate::application::service::PartyRowRules)));
+        let party_service = Arc::new(crate::application::service::build_party_service(party_repository.clone()));
 
         // PartyAddress service
         let party_address_repository = Arc::new(PartyAddressRepository::new(db_pool.clone()));
-        let party_address_service = Arc::new(PartyAddressService::with_repository(party_address_repository.clone()).with_guard(Arc::new(crate::application::service::PartyAddressRowRules)));
+        let party_address_service = Arc::new(crate::application::service::build_party_address_service(party_address_repository.clone()));
 
         // PartyContact service
         let party_contact_repository = Arc::new(PartyContactRepository::new(db_pool.clone()));
-        let party_contact_service = Arc::new(PartyContactService::with_repository(party_contact_repository.clone()).with_guard(Arc::new(crate::application::service::PartyContactRowRules)));
+        let party_contact_service = Arc::new(crate::application::service::build_party_contact_service(party_contact_repository.clone()));
 
         // PartyEmail service
         let party_email_repository = Arc::new(PartyEmailRepository::new(db_pool.clone()));
-        let party_email_service = Arc::new(PartyEmailService::with_repository(party_email_repository.clone()).with_guard(Arc::new(crate::application::service::PartyEmailRowRules)));
+        let party_email_service = Arc::new(crate::application::service::build_party_email_service(party_email_repository.clone()));
 
         // PartyPhone service
         let party_phone_repository = Arc::new(PartyPhoneRepository::new(db_pool.clone()));
-        let party_phone_service = Arc::new(PartyPhoneService::with_repository(party_phone_repository.clone()).with_guard(Arc::new(crate::application::service::PartyPhoneRowRules)));
+        let party_phone_service = Arc::new(crate::application::service::build_party_phone_service(party_phone_repository.clone()));
 
 
         // The extension builds its own state from what the generated build made.

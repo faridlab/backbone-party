@@ -109,13 +109,4 @@ rules:
 # -----------------------------------------------------------------------------
 # Domain events (owner publishes; consumers project — docs/erp/shared-masters-ownership.md).
 # -----------------------------------------------------------------------------
-events:
-  PartyCreated:
-    when: "a party is created"
-    payload: [party_id, party_code, party_kind]
-  PartyUpdated:
-    when: "a party's core identity changes"
-    payload: [party_id]
-  PartyArchived:
-    when: "a party is blocked/soft-deleted"
-    payload: [party_id]
+events: {}
