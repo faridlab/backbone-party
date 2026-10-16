@@ -49,7 +49,6 @@ pub struct CreatePartyDto {
     pub nik: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vat: Option<String>,
-    pub status: PartyStatus,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 }
@@ -275,7 +274,7 @@ impl From<CreatePartyDto> for Party {
             npwp: dto.npwp,
             nik: dto.nik,
             vat: dto.vat,
-            status: dto.status,
+            status: PartyStatus::Active,
             notes: dto.notes,
             metadata: AuditMetadata::default(),
         }
