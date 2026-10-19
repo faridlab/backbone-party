@@ -255,6 +255,9 @@ impl super::Entity for Party {
 }
 
 impl backbone_core::PersistentEntity for Party {
+    fn state_fields() -> &'static [&'static str] {
+        &["status"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

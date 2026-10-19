@@ -42,7 +42,7 @@ pub struct CreatePartyContactDto {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phone: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_primary")]
+    #[serde(default, alias = "is_primary")]
     pub is_primary: bool,
 }
 
@@ -94,14 +94,14 @@ pub struct PatchPartyContactDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "job_title")]
-    pub job_title: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub department: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "job_title")]
+    pub job_title: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub department: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub email: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub phone: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "is_primary")]
     pub is_primary: Option<bool>,
@@ -284,12 +284,4 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyContactDto> for PartyContact {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to PartyContact here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

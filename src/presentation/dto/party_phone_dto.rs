@@ -32,12 +32,17 @@ pub struct CreatePartyPhoneDto {
     #[serde(alias = "party_id")]
     pub party_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
+    #[serde(default = "default_create_party_phone_label")]
     pub label: String,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub phone: String,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_primary")]
+    #[serde(default, alias = "is_primary")]
     pub is_primary: bool,
+}
+
+fn default_create_party_phone_label() -> String {
+    "mobile".to_string()
 }
 
 // =============================================================================
@@ -253,12 +258,4 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyPhoneDto> for PartyPhone {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to PartyPhone here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

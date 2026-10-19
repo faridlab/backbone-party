@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for PartyContactError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `party_contact:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn party_contact_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("party_contact")
+        .in_module("party")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for PartyContact.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for PartyContactError {
 /// let router = create_party_contact_routes(service);
 /// ```
 pub fn create_party_contact_routes(service: Arc<PartyContactService>) -> Router {
-    BackboneCrudHandler::<PartyContactService, PartyContact, CreatePartyContactDto, UpdatePartyContactDto, PartyContactResponseDto>::routes(
+    BackboneCrudHandler::<PartyContactService, PartyContact, CreatePartyContactDto, UpdatePartyContactDto, PartyContactResponseDto>::routes_guarded(
         service,
         "/party_contacts",
+        party_contact_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for PartyContact.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_party_contact_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_party_contact_read_routes(service: Arc<PartyContactService>) -> Router {
-    BackboneCrudHandler::<PartyContactService, PartyContact, CreatePartyContactDto, UpdatePartyContactDto, PartyContactResponseDto>::read_routes(
+    BackboneCrudHandler::<PartyContactService, PartyContact, CreatePartyContactDto, UpdatePartyContactDto, PartyContactResponseDto>::read_routes_guarded(
         service,
         "/party_contacts",
+        party_contact_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_party_contact_read_routes(service: Arc<PartyContactService>) -> Ro
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_party_contact_write_routes(service: Arc<PartyContactService>) -> Router {
-    BackboneCrudHandler::<PartyContactService, PartyContact, CreatePartyContactDto, UpdatePartyContactDto, PartyContactResponseDto>::write_routes(
+    BackboneCrudHandler::<PartyContactService, PartyContact, CreatePartyContactDto, UpdatePartyContactDto, PartyContactResponseDto>::write_routes_guarded(
         service,
         "/party_contacts",
+        party_contact_permissions(),
     )
 }
 

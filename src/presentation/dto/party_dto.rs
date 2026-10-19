@@ -33,7 +33,7 @@ pub struct CreatePartyDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(alias = "party_code")]
     pub party_code: String,
-    #[serde(alias = "party_kind")]
+    #[serde(default = "default_create_party_party_kind", alias = "party_kind")]
     pub party_kind: PartyKind,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
@@ -51,6 +51,10 @@ pub struct CreatePartyDto {
     pub vat: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+}
+
+fn default_create_party_party_kind() -> PartyKind {
+    PartyKind::Organization
 }
 
 // =============================================================================
@@ -109,22 +113,22 @@ pub struct PatchPartyDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "legal_name")]
-    pub legal_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "first_name")]
-    pub first_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "last_name")]
-    pub last_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub npwp: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nik: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vat: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "legal_name")]
+    pub legal_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "first_name")]
+    pub first_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "last_name")]
+    pub last_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub npwp: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub nik: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub vat: Option<Option<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<PartyStatus>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub notes: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub notes: Option<Option<String>>,
 }
 
 impl PatchPartyDto {
@@ -323,12 +327,4 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyDto> for Party {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Party here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

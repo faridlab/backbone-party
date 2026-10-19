@@ -34,7 +34,7 @@ pub struct CreatePartyAddressDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "party_id")]
     pub party_id: Uuid,
-    #[serde(alias = "address_type")]
+    #[serde(default = "default_create_party_address_address_type", alias = "address_type")]
     pub address_type: AddressType,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
@@ -59,15 +59,24 @@ pub struct CreatePartyAddressDto {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub longitude: Option<Decimal>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_primary")]
+    #[serde(default, alias = "is_primary")]
     pub is_primary: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_billing")]
+    #[serde(default, alias = "is_billing")]
     pub is_billing: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_shipping")]
+    #[serde(default, alias = "is_shipping")]
     pub is_shipping: bool,
+    #[serde(default = "default_create_party_address_status")]
     pub status: PartyStatus,
+}
+
+fn default_create_party_address_address_type() -> AddressType {
+    AddressType::Home
+}
+
+fn default_create_party_address_status() -> PartyStatus {
+    PartyStatus::Active
 }
 
 // =============================================================================
@@ -138,29 +147,29 @@ pub struct PatchPartyAddressDto {
     pub party_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "address_type")]
     pub address_type: Option<AddressType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub label: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub label: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub line1: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub line2: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "country_id")]
-    pub country_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "province_id")]
-    pub province_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "city_id")]
-    pub city_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "district_id")]
-    pub district_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "subdistrict_id")]
-    pub subdistrict_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "postal_code")]
-    pub postal_code: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub latitude: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub longitude: Option<Decimal>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub line2: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "country_id")]
+    pub country_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "province_id")]
+    pub province_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "city_id")]
+    pub city_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "district_id")]
+    pub district_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "subdistrict_id")]
+    pub subdistrict_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "postal_code")]
+    pub postal_code: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub latitude: Option<Option<Decimal>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub longitude: Option<Option<Decimal>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "is_primary")]
     pub is_primary: Option<bool>,
@@ -403,12 +412,4 @@ impl backbone_core::ApplyUpdateDto<UpdatePartyAddressDto> for PartyAddress {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to PartyAddress here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

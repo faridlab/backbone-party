@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for PartyEmailError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `party_email:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn party_email_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("party_email")
+        .in_module("party")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for PartyEmail.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for PartyEmailError {
 /// let router = create_party_email_routes(service);
 /// ```
 pub fn create_party_email_routes(service: Arc<PartyEmailService>) -> Router {
-    BackboneCrudHandler::<PartyEmailService, PartyEmail, CreatePartyEmailDto, UpdatePartyEmailDto, PartyEmailResponseDto>::routes(
+    BackboneCrudHandler::<PartyEmailService, PartyEmail, CreatePartyEmailDto, UpdatePartyEmailDto, PartyEmailResponseDto>::routes_guarded(
         service,
         "/party_emails",
+        party_email_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for PartyEmail.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_party_email_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_party_email_read_routes(service: Arc<PartyEmailService>) -> Router {
-    BackboneCrudHandler::<PartyEmailService, PartyEmail, CreatePartyEmailDto, UpdatePartyEmailDto, PartyEmailResponseDto>::read_routes(
+    BackboneCrudHandler::<PartyEmailService, PartyEmail, CreatePartyEmailDto, UpdatePartyEmailDto, PartyEmailResponseDto>::read_routes_guarded(
         service,
         "/party_emails",
+        party_email_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_party_email_read_routes(service: Arc<PartyEmailService>) -> Router
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_party_email_write_routes(service: Arc<PartyEmailService>) -> Router {
-    BackboneCrudHandler::<PartyEmailService, PartyEmail, CreatePartyEmailDto, UpdatePartyEmailDto, PartyEmailResponseDto>::write_routes(
+    BackboneCrudHandler::<PartyEmailService, PartyEmail, CreatePartyEmailDto, UpdatePartyEmailDto, PartyEmailResponseDto>::write_routes_guarded(
         service,
         "/party_emails",
+        party_email_permissions(),
     )
 }
 

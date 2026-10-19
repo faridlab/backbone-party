@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for PartyPhoneError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `party_phone:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn party_phone_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("party_phone")
+        .in_module("party")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for PartyPhone.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for PartyPhoneError {
 /// let router = create_party_phone_routes(service);
 /// ```
 pub fn create_party_phone_routes(service: Arc<PartyPhoneService>) -> Router {
-    BackboneCrudHandler::<PartyPhoneService, PartyPhone, CreatePartyPhoneDto, UpdatePartyPhoneDto, PartyPhoneResponseDto>::routes(
+    BackboneCrudHandler::<PartyPhoneService, PartyPhone, CreatePartyPhoneDto, UpdatePartyPhoneDto, PartyPhoneResponseDto>::routes_guarded(
         service,
         "/party_phones",
+        party_phone_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for PartyPhone.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_party_phone_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_party_phone_read_routes(service: Arc<PartyPhoneService>) -> Router {
-    BackboneCrudHandler::<PartyPhoneService, PartyPhone, CreatePartyPhoneDto, UpdatePartyPhoneDto, PartyPhoneResponseDto>::read_routes(
+    BackboneCrudHandler::<PartyPhoneService, PartyPhone, CreatePartyPhoneDto, UpdatePartyPhoneDto, PartyPhoneResponseDto>::read_routes_guarded(
         service,
         "/party_phones",
+        party_phone_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_party_phone_read_routes(service: Arc<PartyPhoneService>) -> Router
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_party_phone_write_routes(service: Arc<PartyPhoneService>) -> Router {
-    BackboneCrudHandler::<PartyPhoneService, PartyPhone, CreatePartyPhoneDto, UpdatePartyPhoneDto, PartyPhoneResponseDto>::write_routes(
+    BackboneCrudHandler::<PartyPhoneService, PartyPhone, CreatePartyPhoneDto, UpdatePartyPhoneDto, PartyPhoneResponseDto>::write_routes_guarded(
         service,
         "/party_phones",
+        party_phone_permissions(),
     )
 }
 
